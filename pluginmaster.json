@@ -20,9 +20,9 @@
     "IsTestingExclusive": false,
     "DownloadCount": 0,
     "MinimumDalamudVersion": "15.0.3.4",
-    "DownloadLinkInstall": "https://cdn.jsdelivr.net/gh/Lieng-ui/UmadLab@master/UmadLab/latest.zip",
-    "DownloadLinkUpdate": "https://cdn.jsdelivr.net/gh/Lieng-ui/UmadLab@master/UmadLab/latest.zip",
-    "DownloadLinkTesting": "https://cdn.jsdelivr.net/gh/Lieng-ui/UmadLab@master/UmadLab/latest.zip",
+    "DownloadLinkInstall": "https://cdn.jsdelivr.net/gh/Lieng-ui/UmadLab@v0.1.0.0/UmadLab/latest.zip",
+    "DownloadLinkUpdate": "https://cdn.jsdelivr.net/gh/Lieng-ui/UmadLab@v0.1.0.0/UmadLab/latest.zip",
+    "DownloadLinkTesting": "https://cdn.jsdelivr.net/gh/Lieng-ui/UmadLab@v0.1.0.0/UmadLab/latest.zip",
     "LastUpdate": 1795701723
   }
 ]
