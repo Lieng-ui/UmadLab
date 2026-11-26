@@ -6,7 +6,7 @@
     "Description": "AnoMech 的分支版本（AGPL-3.0，原作者 Anomek）。针对绝妖星做了 P1–P5 场景串联，补充 AnoMech 所有未收录的机制，使 AI 队友采取国服野队走位，可在串联器配置倒计时，自动存档/读档。 Spawns fake party members and bosses client-side so you can practice raid mechanics without a full party.",
     "InternalName": "UmadLab",
     "AssemblyVersion": "0.1.0.0",
-    "RepoUrl": "https://github.com/<user>/UmadLab",
+    "RepoUrl": "https://github.com/Lieng-ui/UmadLab",
     "ApplicableVersion": "any",
     "Tags": [
       "umad",

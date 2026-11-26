@@ -23,6 +23,13 @@ https://cdn.jsdelivr.net/gh/Lieng-ui/UmadLab@master/pluginmaster.json
 4. 保存，打开 `/xlplugins`，搜索 `UmadLab` 安装
 
 
+## 源码
+
+本插件以 AGPL-3.0 开源，完整源码在 [`src/`](src/)：
+
+- 修改说明与构建方式：[`src/SOURCE.md`](src/SOURCE.md)
+- 上游项目：[AnoMech](https://github.com/anomek/AnoMech)
+
 ## 许可与致谢
 
 - 本插件以 **AGPL-3.0** 发布，完整许可证见 [LICENSE.md](LICENSE.md)
