@@ -1,0 +1,14 @@
+UmadLab — a practice fork of AnoMech
+===================================
+
+UmadLab is a modified version of AnoMech (https://github.com/anomek/AnoMech),
+which is licensed under the GNU Affero General Public License v3.0 or later.
+
+Original work: Copyright (c) Anomek and AnoMech contributors.
+Modifications: P1/P2 full-chain scenario assembly, CN party-finder AI strats,
+stage chaining with configurable countdown/role, and related fixes.
+
+This build is distributed under AGPL-3.0-or-later. The complete corresponding
+source for this build is the AnoMech working tree it was compiled from.
+
+Changes since upstream are documented in the project's git history.
