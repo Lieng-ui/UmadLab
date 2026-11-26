@@ -1,14 +1,53 @@
 UmadLab — a practice fork of AnoMech
 ===================================
 
-UmadLab is a modified version of AnoMech (https://github.com/anomek/AnoMech),
-which is licensed under the GNU Affero General Public License v3.0 or later.
+UmadLab is a modified version of AnoMech, which is licensed under the
+GNU Affero General Public License, version 3 or later (AGPL-3.0-or-later).
 
 Original work: Copyright (c) Anomek and AnoMech contributors.
-Modifications: P1/P2 full-chain scenario assembly, CN party-finder AI strats,
-stage chaining with configurable countdown/role, and related fixes.
+Upstream project: https://github.com/anomek/AnoMech
 
-This build is distributed under AGPL-3.0-or-later. The complete corresponding
-source for this build is the AnoMech working tree it was compiled from.
+Modifications in UmadLab:
+  - Renamed plugin identity to UmadLab (assembly, manifest, window title);
+    namespaces remain AnoMech.*
+  - Added full P1-P5 scenarios under Scenarios/Umad/ (P1Full .. P5Full) with
+    CN party-finder AI strats
+  - Added the P1-P5 encounter chain controller (UmadEncounterChain): waymark
+    presets, configurable countdown, cheat-sheet toggles, per-stage checkpoints
+  - Scenario menu reduced to one "Full" scenario per phase; the specialised
+    scenarios keep their sources but are no longer registered
+  - Assorted mechanic fixes (P3 black hole tethers, P4 Kefka Says cheat sheet,
+    Samurai Fuka GCD handling)
 
-Changes since upstream are documented in the project's git history.
+Corresponding source for this build
+-----------------------------------
+The complete corresponding source is published in this repository:
+
+  https://github.com/Lieng-ui/UmadLab/tree/master/src
+
+This build (assembly version 0.1.0.0) was compiled from that tree; the exact
+commit is recorded in src/SOURCE.md.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See LICENSE.md for the full AGPL-3.0 text.
+
+Bundled third-party libraries
+-----------------------------
+The release archive also contains the following libraries, which are NOT part
+of AnoMech and are used unmodified:
+
+  NAudio (NAudio.Core.dll, NAudio.WinMM.dll)
+    Copyright (c) Mark Heath and contributors
+    MIT License - https://github.com/naudio/NAudio/blob/master/license.txt
+
+  NVorbis (NVorbis.dll)
+    Copyright (c) NVorbis contributors
+    MIT License - https://github.com/NVorbis/NVorbis/blob/master/LICENSE
+
+  AnoMech.Relay.dll
+    Part of AnoMech, AGPL-3.0-or-later (see LICENSE.md)
+
+FINAL FANTASY is a registered trademark of Square Enix Holdings Co., Ltd.
+This plugin is an unofficial fan-made practice tool; it is not affiliated with
+or endorsed by Square Enix.

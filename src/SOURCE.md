@@ -2,6 +2,16 @@
 
 本目录是 **UmadLab** 的完整源码快照（C# / Dalamud 插件）。
 
+## 对应哪个发布版本
+
+| 发布版本 | 程序集 | 源码提交 |
+|---|---|---|
+| `0.1.0.0` | `UmadLab.dll` | 见下方「快照基线」 |
+
+本快照导出时的上游工作树提交：`bca5cd1`（分支 `gemini/minloop-v1`）。
+`0.1.0.0` 的二进制即由该工作树构建；之后的提交只改动了清单与仓库文件，
+不含代码变更。
+
 ## 来源
 
 | 项 | 值 |
@@ -9,6 +19,7 @@
 | 上游项目 | [AnoMech](https://github.com/anomek/AnoMech)，作者 Anomek |
 | 许可证 | AGPL-3.0（见仓库根目录 `LICENSE.md`） |
 | 本分支基线 | 上游 `0.5.1.0` + UmadLab 自有改动 |
+| 对应源码地址 | <https://github.com/Lieng-ui/UmadLab/tree/master/src> |
 
 UmadLab 相对上游的主要改动：
 
