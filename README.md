@@ -7,8 +7,9 @@
 ## 安装
 
 将下方地址添加至 Dalamud 第三方仓库：
-
+```
 https://raw.githubusercontent.com/Lieng-ui/UmadLab/master/pluginmaster.json
+```
 
 国内镜像地址：
 ```
