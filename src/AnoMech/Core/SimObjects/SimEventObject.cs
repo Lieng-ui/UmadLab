@@ -68,8 +68,10 @@ public class SimEventObject : ISimObject, IPositioned
 
     internal static SimEventObject? Spawn(EventObjectSpawnConfig config, Coordinates coordinates, EventScheduler events)
     {
-        if (Natives.EventObjects.Spawn(config, coordinates.ToGlobal(config.Placement)) is not { } spawned) return null;
+        var globalPlacement = coordinates.ToGlobal(config.Placement);
+        if (Natives.EventObjects.Spawn(config, globalPlacement) is not { } spawned) return null;
         DiagnosticLog.Info($"[SimEventObject.Create] Spawned EObj with EObjId 0x{config.EObjId:X} at Slot: {spawned.Slot} {spawned.Position}");
+        ActLogBridge.EmitSpawnEObj(spawned.EntityId, config.EObjId, globalPlacement.Position, globalPlacement.Rotation);
         return new SimEventObject(spawned, coordinates, config);
     }
 
@@ -81,7 +83,12 @@ public class SimEventObject : ISimObject, IPositioned
 
     public void DirectorEObjMod(uint state) => obj?.ActorControl(106, state);
 
-    public void PlayBeat(uint state, uint bitmask) => obj?.ActorControl(413, state, bitmask);
+    public void PlayBeat(uint state, uint bitmask)
+    {
+        if (obj is null) return;
+        obj.ActorControl(413, state, bitmask);
+        ActLogBridge.EmitEObjAnimation(obj.EntityId, SpawnConfig.EObjId, obj.Position, obj.Rotation, state, bitmask);
+    }
 
     public virtual void Tick(float deltaSeconds)
     {

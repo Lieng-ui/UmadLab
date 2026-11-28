@@ -17,15 +17,17 @@ internal sealed class UmadP3FullBlackHoleAi
 
     private UmadP3BlackHoleState state = null!;
     private SimWorld world = null!;
+    private PartyRole[] priorityRoles = null!;
 
     private float timeOffset;
     private float At(float t) => timeOffset + t;
 
-    public void RunAt(UmadP3BlackHoleState stateParam, SimWorld worldParam, float timeOffsetParam)
+    public void RunAt(UmadP3BlackHoleState stateParam, SimWorld worldParam, float timeOffsetParam, PartyRole[]? prioritySeats = null)
     {
         timeOffset = timeOffsetParam;
         state = stateParam;
         world = worldParam;
+        priorityRoles = prioritySeats is { Length: 8 } ? prioritySeats : stateParam.Roles.List.ToArray();
         assignedHole.Clear();
         setHoles.Clear();
         implosionChaos = null;
@@ -135,14 +137,14 @@ internal sealed class UmadP3FullBlackHoleAi
     
     private Dictionary<PartyRole, Sign> BuildCnBlackHoleMarkers() => new()
     {
-        [state.Roles[4]] = Sign.Attack1,
-        [state.Roles[0]] = Sign.Attack2,
-        [state.Roles[3]] = Sign.Attack3,
-        [state.Roles[5]] = Sign.Bind1,
-        [state.Roles[1]] = Sign.Bind2,
-        [state.Roles[7]] = Sign.Bind3,
-        [state.Roles[6]] = Sign.Ignore1,
-        [state.Roles[2]] = Sign.Ignore2,
+        [priorityRoles[4]] = Sign.Attack1,
+        [priorityRoles[0]] = Sign.Attack2,
+        [priorityRoles[3]] = Sign.Attack3,
+        [priorityRoles[5]] = Sign.Bind1,
+        [priorityRoles[1]] = Sign.Bind2,
+        [priorityRoles[7]] = Sign.Bind3,
+        [priorityRoles[6]] = Sign.Ignore1,
+        [priorityRoles[2]] = Sign.Ignore2,
     };
 
     private IAiMove StackCentreTanksHoldBossesCentred()
@@ -554,11 +556,11 @@ internal sealed class UmadP3FullBlackHoleAi
     }
 
     private void ReturnToMiddle(int playerIndex) =>
-        state.Roles.Get(TetherSeat(playerIndex))?.MoveTo(new Vector3(0f, 0f, 0f));
+        world.Party.Get(priorityRoles[TetherSeat(playerIndex)])?.MoveTo(new Vector3(0f, 0f, 0f));
 
     private void ReturnToMiddleWhenFree(int playerIndex, int retriesLeft = 8)
     {
-        var player = state.Roles.Get(TetherSeat(playerIndex));
+        var player = world.Party.Get(priorityRoles[TetherSeat(playerIndex)]);
         if (player is null || !player.IsAlive()) return;
         if (TetherHeldBy(player) is not null)
         {
@@ -574,7 +576,7 @@ internal sealed class UmadP3FullBlackHoleAi
     {
         var theta = state.KefkaPosition[lookKefkaIndex].RadiansFromNorth;
 
-        var holder = state.Roles.Get(holderSeat);
+        var holder = world.Party.Get(priorityRoles[holderSeat]);
         var blackHole = (TetherHeldBy(holder) ?? state.ScenarioObjects.Tethers.FirstOrDefault())?.A;
         var alpha = blackHole is { } bh
                         ? MathF.Atan2(bh.Position.X, -bh.Position.Z)
@@ -592,10 +594,10 @@ internal sealed class UmadP3FullBlackHoleAi
     {
         var holderSeat = TetherSeat(tetherPlayerIndex);
         var coords = new Vector2?[8];
-        if (!leaveWithoutTether && TetherHeldBy(state.Roles.Get(holderSeat)) is null)
+        if (!leaveWithoutTether && TetherHeldBy(world.Party.Get(priorityRoles[holderSeat])) is null)
             return AiMove.Create(coords).NaturalOrder();
         var holderSpot = LookUponHolderSpot(holderSeat, lookKefkaIndex);
-        var holderRole = state.Roles[holderSeat];
+        var holderRole = priorityRoles[holderSeat];
         coords[(int)holderRole] = new Vector2(holderSpot.X, holderSpot.Z);
         return AiMove.Create(coords).NaturalOrder();
     }
@@ -604,7 +606,7 @@ internal sealed class UmadP3FullBlackHoleAi
     {
         var holderSeat = TetherSeat(tetherPlayerIndex);
         var holderSpot = LookUponHolderSpot(holderSeat, lookKefkaIndex);
-        var holderRole = state.Roles[holderSeat];
+        var holderRole = priorityRoles[holderSeat];
         var coords = new Vector2?[8];
         for (int i = 0; i < 8; i++)
             if ((PartyRole)i != holderRole)
@@ -665,7 +667,7 @@ internal sealed class UmadP3FullBlackHoleAi
     private void HoldOnTo(SimCharacter hole, int playerIndex, float until, float intercept = 3f)
     {
         var seat = TetherSeat(playerIndex);
-        var player = state.Roles.Get(seat);
+        var player = world.Party.Get(priorityRoles[seat]);
         var tether = SortedTethers().FirstOrDefault(t => ReferenceEquals(t.A, hole));
         if (player is null || !player.IsAlive() || tether is null || world.Events.Elapsed >= until) return;
         if (!ReferenceEquals(assignedHole.GetValueOrDefault(seat), hole)) return;
@@ -683,7 +685,7 @@ internal sealed class UmadP3FullBlackHoleAi
     private SimTether? GrabTether(int tetherIndex, int playerIndex, float intercept = 3f)
     {
         var seat = TetherSeat(playerIndex);
-        var player = state.Roles.Get(seat);
+        var player = world.Party.Get(priorityRoles[seat]);
         var tethers = SortedTethers();
         var tether = tethers.ElementAtOrDefault(tetherIndex);
         assignedHole[seat] = tether?.A;
@@ -706,7 +708,7 @@ internal sealed class UmadP3FullBlackHoleAi
     private void PullTether(int playerIndex, int retriesLeft = PullTetherMaxRetries)
     {
         var seat = TetherSeat(playerIndex);
-        var player = state.Roles.Get(seat);
+        var player = world.Party.Get(priorityRoles[seat]);
         var role = (player as ISimPartyMember)?.Role.ToString() ?? $"player#{seat}";
 
         var hole = assignedHole.GetValueOrDefault(seat);
@@ -737,7 +739,7 @@ internal sealed class UmadP3FullBlackHoleAi
 
     private void RegrabTetherIfLost(int tetherIndex, int playerIndex)
     {
-        var player = state.Roles.Get(TetherSeat(playerIndex));
+        var player = world.Party.Get(priorityRoles[TetherSeat(playerIndex)]);
         if (player is null || player.IsIntercepting || TetherHeldBy(player) is not null) return;
         GrabTether(tetherIndex, playerIndex);
     }

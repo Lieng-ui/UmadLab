@@ -45,7 +45,7 @@ internal static unsafe class PlayerCombo
         [7526] = 7525,                 // Verholy
     };
 
-    private static uint ComboId(uint actionId) => ComboForms.GetValueOrDefault(actionId, actionId);
+    public static uint ComboId(uint actionId) => ComboForms.GetValueOrDefault(actionId, actionId);
 
     // The action `actionId` combos from (0 = it isn't a continuation).
     private static uint PrerequisiteOf(uint actionId)

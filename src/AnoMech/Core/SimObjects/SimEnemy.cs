@@ -192,6 +192,7 @@ public sealed class SimEnemy : SimNpc
 
     protected override void OnPacketSpawned(IBattleCharaProxy chara)
     {
+        ActLogBridge.EmitAddCombatant(chara.EntityId, DisplayName, BNpcBaseId, chara.Position, chara.Rotation);
         var targetableBefore = chara.TargetableStatus;
         if (SpawnConfig.Targetable) // enemies spawn untargettable
             SetTargetable(SpawnConfig.Targetable);

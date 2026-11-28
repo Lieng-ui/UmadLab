@@ -79,6 +79,7 @@ public sealed class Plugin : IAsyncDalamudPlugin
 
             LogManager = new LogManager();
             if (Config.EnableEventLogging) LogManager.Open();
+            if (Config.EnableActBridge) ActLogBridge.Start();
 
             GameNatives.Install();
             opcodeUpdater = new OpcodeUpdater();
@@ -217,6 +218,7 @@ public sealed class Plugin : IAsyncDalamudPlugin
         }
 
         // Last, so it captures every other subsystem's teardown logging before the DLL unloads.
+        ActLogBridge.Stop();
         DiagnosticLog.Shutdown();
     }
 

@@ -204,7 +204,12 @@ public sealed class SimTether : ISimObject
     private void CreateVfx()
     {
         if (currentSource != null && currentTarget != null)
+        {
             currentSource.ActorControl.SetTether(TetherId, currentTarget.GameObjectId);
+            var srcId = currentSource is SimNpc sn ? sn.ActEntityId : currentSource.EntityId;
+            var tgtId = currentTarget is SimNpc tn ? tn.ActEntityId : currentTarget.EntityId;
+            ActLogBridge.EmitTether(srcId, tgtId, TetherId);
+        }
     }
 
     // Sentinel-checked clear: only wipe a slot we still own. A chained tether

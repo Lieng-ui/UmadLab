@@ -179,7 +179,7 @@ public sealed class ScenarioSession
         instance.PlacePlayer();
         Natives.UserActions.OnScenarioStart(run.KeepPlayerState);
         StartMusic();
-        Plugin.ChatGui.Print(new XivChatEntry { Type = XivChatType.SystemMessage, Message = $"[AnoMech] Starting: {Scenario.FullName()}{(Mode == SessionMode.Local ? " (Solo)" : "")}" });
+        Plugin.ChatGui.Print(new XivChatEntry { Type = XivChatType.SystemMessage, Message = $"[UmadLab] Starting: {Scenario.FullName()}{(Mode == SessionMode.Local ? " (Solo)" : "")}" });
     }
 
     public void Tick(float deltaSeconds)
@@ -230,7 +230,7 @@ public sealed class ScenarioSession
         mechanicFailed = true;
         issues.Add(new RunIssue(elapsed, reason));
         DiagnosticLog.Warn($"[ScenarioSession] Mechanic failed at t={elapsed:F2}: {reason}");
-        Plugin.ChatGui.Print(new XivChatEntry { Type = XivChatType.SystemMessage, Message = $"[AnoMech] Mechanic failed: {reason}" });
+        Plugin.ChatGui.Print(new XivChatEntry { Type = XivChatType.SystemMessage, Message = $"[UmadLab] Mechanic failed: {reason}" });
         MarkMistake();
         MechanicFailed?.Invoke(reason);
         if (freeze) ScheduleFreeze();
@@ -246,7 +246,7 @@ public sealed class ScenarioSession
     private void PrintFailureSummary()
     {
         var lines = string.Join("; ", issues.Select(i => $"{i.Description} ({i.Time:F1}s)"));
-        Plugin.ChatGui.Print(new XivChatEntry { Type = XivChatType.SystemMessage, Message = $"[AnoMech] Run failed: {lines}" });
+        Plugin.ChatGui.Print(new XivChatEntry { Type = XivChatType.SystemMessage, Message = $"[UmadLab] Run failed: {lines}" });
     }
 
     private void PlayMark(uint actionId)
@@ -287,12 +287,26 @@ public sealed class ScenarioSession
 #endif
     }
 
+    private const ushort SilentBgmId = 1;
+
     private void StartMusic()
     {
         var phase = Scenario.Phase;
         DiagnosticLog.Info($"[Bgm] Suppress scenario BGM: {(Plugin.Config.SuppressBgm ? "on" : "off")}.");
-        if (!Plugin.Config.SuppressBgm && phase.Bgm != 0)
-            world.PlayBgm(phase.Bgm, Scenario.BgmSecondsAtStart);
+        if (Plugin.Config.SuppressBgm || phase.Bgm == 0) return;
+
+        var delay = MathF.Max(0f, Scenario.BgmStartDelaySeconds);
+        var bgmId = phase.Bgm;
+        var secondsIn = Scenario.BgmSecondsAtStart;
+        if (delay <= 0f)
+        {
+            world.PlayBgm(bgmId, secondsIn);
+            return;
+        }
+
+        // Keep quiet until 0s pull / BGM cue, then start the phase BGM.
+        world.PlayBgm(SilentBgmId, 0f);
+        world.Events.Add(delay, () => world.PlayBgm(bgmId, secondsIn));
     }
 
     // The selected preset, or [0] as the default.

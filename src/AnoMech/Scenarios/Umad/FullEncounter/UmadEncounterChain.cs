@@ -45,15 +45,15 @@ public sealed class UmadEncounterChain : IDisposable
 
     private static readonly (PartyRole? Role, string ShortName, string DisplayName)[] RoleOptions =
     [
-        (null,                    "auto", "Auto (按当前职业)"),
-        (PartyRole.MainTank,      "mt",   "MT (主坦)"),
-        (PartyRole.OffTank,       "st",   "ST (副坦)"),
-        (PartyRole.RegenHealer,   "h1",   "H1 (纯奶)"),
-        (PartyRole.ShieldHealer,  "h2",   "H2 (盾奶)"),
-        (PartyRole.MeleeDpsA,     "d1",   "D1 (近战1)"),
-        (PartyRole.MeleeDpsB,     "d2",   "D2 (近战2)"),
-        (PartyRole.PhysRangedDps, "d3",   "D3 (远敏)"),
-        (PartyRole.CasterDps,     "d4",   "D4 (法系)"),
+        (null,                    "auto", "自动"),
+        (PartyRole.MainTank,      "mt",   "MT"),
+        (PartyRole.OffTank,       "st",   "ST"),
+        (PartyRole.RegenHealer,   "h1",   "H1"),
+        (PartyRole.ShieldHealer,  "h2",   "H2"),
+        (PartyRole.MeleeDpsA,     "d1",   "D1"),
+        (PartyRole.MeleeDpsB,     "d2",   "D2"),
+        (PartyRole.PhysRangedDps, "d3",   "D3"),
+        (PartyRole.CasterDps,     "d4",   "D4"),
     ];
 
     private readonly Game game;
@@ -74,7 +74,8 @@ public sealed class UmadEncounterChain : IDisposable
     public int SelectedWaymark { get; set; } = ResolveDefaultBigBoxWaymarkIndex();
     public bool EnableP3CheatSheet { get; set; } = true;
     public bool EnableP4CheatSheet { get; set; } = true;
-    public float P3ClearTimeSec { get; set; } = 301.5f;
+    public float P3ChaosKillDelayAfterBigBangSec { get; set; } = 12.5f;
+    public float P3ExdeathKillDelayAfterChaosSec { get; set; } = 6.0f;
     public float P5ClearTimeSec { get; set; } = 205.0f;
 
     public bool IsActive => active;
@@ -90,6 +91,7 @@ public sealed class UmadEncounterChain : IDisposable
         builtInTailOverrideSec = Stages.Select(s => s.DefaultBuiltInTailSec).ToArray();
         checkpoints = new EncounterCheckpoint?[Stages.Length];
         this.game.RunFinished += OnRunFinished;
+        this.game.InstanceExited += OnInstanceExited;
     }
 
     private static int ResolveDefaultBigBoxWaymarkIndex()
@@ -234,6 +236,18 @@ public sealed class UmadEncounterChain : IDisposable
         inInstance = game.ActiveScenario != null;
         notify?.Invoke("[UmadChain] 已停止串联并重置场景。");
     }
+
+    public void CancelFromExternal(bool exitedInstance)
+    {
+        if (exitedInstance) inInstance = false;
+        if (!active && pendingNextIndex < 0 && currentStageIndex < 0) return;
+        active = false;
+        pendingNextIndex = -1;
+        transitionWaitRemaining = 0f;
+        currentStageIndex = -1;
+    }
+
+    private void OnInstanceExited() => CancelFromExternal(exitedInstance: true);
 
     public void Tick(float deltaSeconds)
     {
@@ -429,11 +443,8 @@ public sealed class UmadEncounterChain : IDisposable
             if (stageIndex == 2)
             {
                 SetPropertyIfWritable(ov, "EnableCheatSheet", EnableP3CheatSheet);
-                var totalAfterBigBang = Math.Clamp(P3ClearTimeSec - P3BigBangCombatSec, 7.0f, 34.5f);
-                var exDelay = Math.Clamp(6.0f, 2.0f, MathF.Min(9.5f, totalAfterBigBang - 5.0f));
-                var chaosDelay = Math.Clamp(totalAfterBigBang - exDelay, 5.0f, 25.0f);
-                SetPropertyIfWritable(ov, "ChaosKillDelayAfterBigBangSec", chaosDelay);
-                SetPropertyIfWritable(ov, "ExdeathKillDelayAfterChaosSec", exDelay);
+                SetPropertyIfWritable(ov, "ChaosKillDelayAfterBigBangSec", Math.Clamp(P3ChaosKillDelayAfterBigBangSec, 5.0f, 25.0f));
+                SetPropertyIfWritable(ov, "ExdeathKillDelayAfterChaosSec", Math.Clamp(P3ExdeathKillDelayAfterChaosSec, 2.0f, 9.5f));
             }
             else if (stageIndex == 3)
             {
@@ -488,6 +499,7 @@ public sealed class UmadEncounterChain : IDisposable
     public void Dispose()
     {
         game.RunFinished -= OnRunFinished;
+        game.InstanceExited -= OnInstanceExited;
         active = false;
         pendingNextIndex = -1;
         transitionWaitRemaining = 0f;
@@ -524,8 +536,10 @@ public sealed class UmadEncounterChainWindow : Window, IDisposable
             }
         }
 
+        const float labelColWidth = 152f;
+
         ImGui.TextUnformatted("玩家位置");
-        ImGui.SameLine(96f);
+        ImGui.SameLine(labelColWidth);
         ImGui.SetNextItemWidth(180f);
         if (ImGui.BeginCombo("##umad_role", roleOptions[currentRoleIdx].DisplayName))
         {
@@ -539,52 +553,15 @@ public sealed class UmadEncounterChainWindow : Window, IDisposable
             ImGui.EndCombo();
         }
 
-        ImGui.SameLine();
-        var solo = chain.SoloMode;
-        if (ImGui.Checkbox("单人 (无 Bot)", ref solo))
-            chain.SoloMode = solo;
-
-        var presets = UmadEncounterChain.GetWaymarkPresets();
-        if (presets.Count > 0)
-        {
-            var wmIdx = Math.Clamp(chain.SelectedWaymark, 0, presets.Count - 1);
-            ImGui.TextUnformatted("全局标点");
-            ImGui.SameLine(96f);
-            ImGui.SetNextItemWidth(240f);
-            if (ImGui.BeginCombo("##umad_waymark", UmadEncounterChain.FormatWaymarkLabel(presets[wmIdx])))
-            {
-                for (var i = 0; i < presets.Count; i++)
-                {
-                    var selected = i == wmIdx;
-                    if (ImGui.Selectable(UmadEncounterChain.FormatWaymarkLabel(presets[i]), selected))
-                    {
-                        chain.SelectedWaymark = i;
-                        chain.ApplyWaymarkImmediatelyIfInInstance();
-                    }
-                    if (selected) ImGui.SetItemDefaultFocus();
-                }
-                ImGui.EndCombo();
-            }
-        }
-
         var cd = chain.CountdownSeconds;
         ImGui.TextUnformatted("开怪倒数");
-        ImGui.SameLine(96f);
+        ImGui.SameLine(labelColWidth);
         ImGui.SetNextItemWidth(180f);
-        if (ImGui.SliderFloat("##umad_cd", ref cd, 0f, 20f, "%.0f 秒"))
+        if (ImGui.SliderFloat("##umad_cd", ref cd, 0f, 15f, "%.0f s"))
             chain.CountdownSeconds = MathF.Round(cd);
 
-        ImGui.SameLine();
-        if (ImGui.SmallButton("0s")) chain.CountdownSeconds = 0f;
-        ImGui.SameLine();
-        if (ImGui.SmallButton("5s")) chain.CountdownSeconds = 5f;
-        ImGui.SameLine();
-        if (ImGui.SmallButton("10s")) chain.CountdownSeconds = 10f;
-        ImGui.SameLine();
-        if (ImGui.SmallButton("15s")) chain.CountdownSeconds = 15f;
-
         ImGui.TextUnformatted("起始阶段");
-        ImGui.SameLine(96f);
+        ImGui.SameLine(labelColWidth);
         ImGui.SetNextItemWidth(180f);
         if (ImGui.BeginCombo("##umad_start_phase", UmadEncounterChain.Stages[startPhaseIndex].Label))
         {
@@ -599,7 +576,7 @@ public sealed class UmadEncounterChainWindow : Window, IDisposable
         }
 
         ImGui.TextUnformatted("小抄开关");
-        ImGui.SameLine(96f);
+        ImGui.SameLine(labelColWidth);
         var p3Cheat = chain.EnableP3CheatSheet;
         if (ImGui.Checkbox("开启 P3 小抄##chain_p3_cheat", ref p3Cheat))
             chain.EnableP3CheatSheet = p3Cheat;
@@ -608,16 +585,23 @@ public sealed class UmadEncounterChainWindow : Window, IDisposable
         if (ImGui.Checkbox("开启 P4 小抄##chain_p4_cheat", ref p4Cheat))
             chain.EnableP4CheatSheet = p4Cheat;
 
-        var p3Clear = chain.P3ClearTimeSec;
-        ImGui.TextUnformatted("P3 结束时间");
-        ImGui.SameLine(96f);
+        var chaosDelay = chain.P3ChaosKillDelayAfterBigBangSec;
+        ImGui.TextUnformatted("顶起后卡奥斯击杀");
+        ImGui.SameLine(labelColWidth);
         ImGui.SetNextItemWidth(180f);
-        if (ImGui.SliderFloat("##umad_p3_clear", ref p3Clear, 290f, 317f, "%.1f 秒"))
-            chain.P3ClearTimeSec = p3Clear;
+        if (ImGui.SliderFloat("##umad_p3_chaos_kill", ref chaosDelay, 5.0f, 25.0f, "+%.1f s"))
+            chain.P3ChaosKillDelayAfterBigBangSec = chaosDelay;
+
+        var exDelay = chain.P3ExdeathKillDelayAfterChaosSec;
+        ImGui.TextUnformatted("卡奥斯死后小艾击杀");
+        ImGui.SameLine(labelColWidth);
+        ImGui.SetNextItemWidth(180f);
+        if (ImGui.SliderFloat("##umad_p3_ex_kill", ref exDelay, 2.0f, 9.5f, "+%.1f s"))
+            chain.P3ExdeathKillDelayAfterChaosSec = exDelay;
 
         var p5Clear = chain.P5ClearTimeSec;
         ImGui.TextUnformatted("P5 结束时间");
-        ImGui.SameLine(96f);
+        ImGui.SameLine(labelColWidth);
         ImGui.SetNextItemWidth(180f);
         if (ImGui.SliderFloat("##umad_p5_clear", ref p5Clear, 160f, 220f, "%.1f 秒"))
             chain.P5ClearTimeSec = p5Clear;

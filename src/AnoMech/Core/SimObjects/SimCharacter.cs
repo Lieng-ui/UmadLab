@@ -93,8 +93,16 @@ public abstract class SimCharacter : ISimObject, IPositioned
     public float MaxModelDivergence => Motion.MaxModelDivergence;
 
     // Teleport: an ActorSetPos.
-    public void SetPosition(Vector3 position) => Motion.SetPosition(position);
-    public void SetPosition(Placement placement) => Motion.SetPlacement(placement);
+    public void SetPosition(Vector3 position)
+    {
+        Motion.SetPosition(position);
+        if (this is SimEnemy e) ActLogBridge.EmitActorSetPos(EntityId, e.DisplayName, e.BNpcBaseId, Coordinates.ToGlobal(position), Rotation);
+    }
+    public void SetPosition(Placement placement)
+    {
+        Motion.SetPlacement(placement);
+        if (this is SimEnemy e) ActLogBridge.EmitActorSetPos(EntityId, e.DisplayName, e.BNpcBaseId, Coordinates.ToGlobal(placement.Position), placement.Rotation);
+    }
     public void SetRotation(float rotation) => Motion.SetPlacement(new Placement(Position, rotation));
 
     public void TurnTo(float rotation) => Motion.TurnTo(rotation);
@@ -166,7 +174,11 @@ public abstract class SimCharacter : ISimObject, IPositioned
 
     // A mechanic's snap, which a remote player's own client has to make; SetPosition is the
     // engine-side one. Replay and sim: ActorSetPos.
-    public void TeleportTo(Placement placement) => Motion.Force(new ForcedMove.Teleport(placement));
+    public void TeleportTo(Placement placement)
+    {
+        Motion.Force(new ForcedMove.Teleport(placement));
+        if (this is SimEnemy e) ActLogBridge.EmitActorSetPos(EntityId, e.DisplayName, e.BNpcBaseId, Coordinates.ToGlobal(placement.Position), placement.Rotation);
+    }
 
     // Replay (UMAD P1 Confusion): the confused player's own movement, nothing that names the
     // target. Live, never in a replay: forced-move end + follow {target, 1} to the confused player
@@ -187,7 +199,11 @@ public abstract class SimCharacter : ISimObject, IPositioned
     internal bool WalksWith(INavigated walker) => ReferenceEquals(Motion, walker);
 
 
-    public void AttachLockonVfx(uint lockonId) => ActorControl.HeadMarker(lockonId);
+    public void AttachLockonVfx(uint lockonId)
+    {
+        ActorControl.HeadMarker(lockonId);
+        ActLogBridge.EmitTargetIcon(EntityId, (this as SimEnemy)?.DisplayName ?? Proxy?.Name ?? "Target", lockonId);
+    }
 
     // FIXME: minor, keep track of tethers and slots attached to character
     public bool HasTetherInSlot0(ushort tetherId)
@@ -252,12 +268,16 @@ public abstract class SimCharacter : ISimObject, IPositioned
 
     // One the spawn packet already carried: tracked like any other, with nothing sent for it.
     internal void AdoptSpawnStatus(ushort statusId, ushort param)
-        => statusList.Add(new SimStatus(this, statusId, 0f, param, default, FreeStatusSlot(statusId), hidden: false));
+    {
+        statusList.Add(new SimStatus(this, statusId, 0f, param, default, FreeStatusSlot(statusId), hidden: false));
+        ActLogBridge.EmitStatusAdd(statusId, 9999f, 0xE0000000u, EntityId, param);
+    }
 
     private SimStatus SpawnStatus(ushort statusId, float duration, ushort param, GameObjectId sourceObject, bool broadcastAddEvent, bool hidden)
     {
         var status = new SimStatus(this, statusId, duration, param, sourceObject, FreeStatusSlot(statusId), hidden);
         statusList.Add(status);
+        ActLogBridge.EmitStatusAdd(statusId, duration, (uint)sourceObject.ObjectId, EntityId, param);
         if (status.Slot < 0 || hidden) return status;
         statusListChanged = true;
         if (broadcastAddEvent) unannouncedGains.Add(status);
@@ -316,6 +336,7 @@ public abstract class SimCharacter : ISimObject, IPositioned
         if (FindStatus(statusId, sourceObject) is not {} status) return;
         Core.DiagnosticLog.Info($"[SimCharacter] RemoveStatus: {DiagnosticName} loses status {statusId}.");
         status.Despawn();
+        ActLogBridge.EmitStatusRemove(statusId, (uint)sourceObject.ObjectId, EntityId);
     }
 
     public SimStatus? FindStatus(ushort statusId, GameObjectId sourceObject = default)

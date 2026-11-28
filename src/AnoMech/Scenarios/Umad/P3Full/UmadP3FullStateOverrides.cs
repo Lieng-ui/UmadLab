@@ -1,5 +1,12 @@
 namespace AnoMech.Scenarios.Umad.P3Full;
 
+public enum BlackHoleTetherPriority
+{
+    DhtMtFirst = 0,
+    DhtStFirst = 1,
+    Dtn = 2,
+}
+
 public sealed class UmadP3FullStateOverrides
 {
     public float CountdownSeconds { get; set; } = 5.0f;
@@ -9,6 +16,7 @@ public sealed class UmadP3FullStateOverrides
     public bool? Clockwise { get; set; }
     public int? StartSpot { get; set; }
     public int? PlayerNumber { get; set; }
+    public BlackHoleTetherPriority TetherPriority { get; set; } = BlackHoleTetherPriority.DhtMtFirst;
     public float ChaosKillDelayAfterBigBangSec { get; set; } = 12.5f;
     public float ExdeathKillDelayAfterChaosSec { get; set; } = 6.0f;
     public bool EnableCheatSheet { get; set; } = true;

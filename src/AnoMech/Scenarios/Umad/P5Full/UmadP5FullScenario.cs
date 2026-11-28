@@ -27,8 +27,13 @@ public sealed class UmadP5FullScenario : IScenario
     internal const float ForsakenBaseSec = 149.62f;
     public static bool SuppressNextCountdown;
 
+    private const float P5BgmIntroCueSec = 9.70f;
+
     public string Name => "Full";
     public IPhase Phase => UmadZone.P5;
+    // With 29.99s intro: 20294 starts at intro +9.70s from 0s; direct pull starts at 20.29s (29.99 - 9.70).
+    public float BgmSecondsAtStart => preTargetable > 0f ? 0f : PreTargetableDurationSec - P5BgmIntroCueSec;
+    public float BgmStartDelaySeconds => cd + (preTargetable > 0f ? P5BgmIntroCueSec : 0f);
     public bool SupportsSolo => true;
     public bool SupportsMultiplayer => false;
 
@@ -315,6 +320,12 @@ public sealed class UmadP5FullScenario : IScenario
             CastOnRole(PartyRole.OffTank, UmadActions.OrchestraFlare);
             foreach (var role in wave1Holy)
                 CastOnRole(role, UmadActions.OrchestraHoly);
+        });
+
+        AtCombat(baseSec + 6.52f, () =>
+        {
+            party.Get(flareTank)?.AddStatus(StatusId.OrchestraFlareStatus, 6.0f);
+            party.Get(holyTank)?.AddStatus(StatusId.OrchestraHolyStatus, 6.0f);
         });
 
         AtCombat(baseSec + 8.16f, () => kefka?.Cast(ActionId.MaddeningOrchestraWave2, animationLock: 1.1f));

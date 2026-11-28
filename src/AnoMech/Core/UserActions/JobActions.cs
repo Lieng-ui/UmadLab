@@ -32,6 +32,8 @@ internal unsafe class ResourceGauge
 // StatusClearedOnAction table removes statuses by action. See reference-resource-generation.
 internal static unsafe class JobActions
 {
+    public const ushort RdmAccelerationStatusId = 1238;
+
     private static readonly ResourceGauge GnbCartridge = new()
     {
         Read = jgm => jgm->Gunbreaker.Ammo,
@@ -440,23 +442,23 @@ internal static unsafe class JobActions
         [16526] = [Gauge(RdmWhite, 3), Gauge(RdmBlack, 3)],   // Impact
         [7511]  = [Gauge(RdmWhite, 5)],                       // Verstone
         [7510]  = [Gauge(RdmBlack, 5)],                       // Verfire
-        [25856] = [Gauge(RdmWhite, 6), Random(0.5f, Status(1235, 30f))],    // Veraero III (+ Verstone Ready, 50%; guaranteed under Acceleration not modelled)
-        [25855] = [Gauge(RdmBlack, 6), Random(0.5f, Status(1234, 30f))],    // Verthunder III (+ Verfire Ready, 50%; guaranteed under Acceleration not modelled)
+        [25856] = [Gauge(RdmWhite, 6), RandomOrAccel(0.5f, Status(1235, 30f))],    // Veraero III (+ Verstone Ready, 50% or 100% under Acceleration)
+        [25855] = [Gauge(RdmBlack, 6), RandomOrAccel(0.5f, Status(1234, 30f))],    // Verthunder III (+ Verfire Ready, 50% or 100% under Acceleration)
         [16525] = [Gauge(RdmWhite, 7)],                       // Veraero II
         [16524] = [Gauge(RdmBlack, 7)],                       // Verthunder II
         [7526]  = [Gauge(RdmWhite, 11), Gauge(RdmManaStacks, -3), Random(0.2f, Status(1235, 30f))],   // Verholy (+11 W, -3 stacks, 20% Verstone Ready)
         [7525]  = [Gauge(RdmBlack, 11), Gauge(RdmManaStacks, -3), Random(0.2f, Status(1234, 30f))],   // Verflare (+11 B, -3 stacks, 20% Verfire Ready)
         [16530] = [Gauge(RdmWhite, 4), Gauge(RdmBlack, 4)],   // Scorch
         [25858] = [Gauge(RdmWhite, 4), Gauge(RdmBlack, 4)],   // Resolution
-        [7505]  = [Gauge(RdmBlack, 6), Random(0.5f, Status(1234, 30f))],   // Verthunder, below level 62 (+ Verfire Ready, 50%)
-        [7507]  = [Gauge(RdmWhite, 6), Random(0.5f, Status(1235, 30f))],   // Veraero, below level 62 (+ Verstone Ready, 50%)
+        [7505]  = [Gauge(RdmBlack, 6), RandomOrAccel(0.5f, Status(1234, 30f))],   // Verthunder, below level 62 (+ Verfire Ready, 50% or 100% under Acceleration)
+        [7507]  = [Gauge(RdmWhite, 6), RandomOrAccel(0.5f, Status(1235, 30f))],   // Veraero, below level 62 (+ Verstone Ready, 50% or 100% under Acceleration)
         [7518]  = [Status(1238, 20f), Unlocks(37006, Status(3877, 30f))],  // Acceleration + Grand Impact Ready
         [7520]  = [Status(1239, 20f), Unlocks(37005, Status(3876, 30f))],  // Embolden + Thorned Flourish
         [7521]  = [Status(1971, 30f), Status(3875, 30f, 3), Unlocks(37007, Status(3878, 30f))], // Manafication → range + Magicked Swordplay (3 stk) + Prefulgence Ready
         // Enchanted melee each grant 1 Mana Stack (at 3, Verthunder/Veraero → Verflare/Verholy):
-        [7527] = [Gauge(RdmManaStacks, 1)], [7528] = [Gauge(RdmManaStacks, 1)], [7529] = [Gauge(RdmManaStacks, 1)], // Enchanted Riposte/Zwerchhau/Redoublement
-        [45960] = [Gauge(RdmManaStacks, 1)], [45961] = [Gauge(RdmManaStacks, 1)], [45962] = [Gauge(RdmManaStacks, 1)], // the same under Manafication
-        [7530] = [Gauge(RdmManaStacks, 1)], [37002] = [Gauge(RdmManaStacks, 1)], [37003] = [Gauge(RdmManaStacks, 1)], // Enchanted Moulinet/Deux/Trois
+        [7527] = [Gauge(RdmManaStacks, 1)], [7528] = [Combo(Gauge(RdmManaStacks, 1))], [7529] = [Combo(Gauge(RdmManaStacks, 1))], // Enchanted Riposte/Zwerchhau/Redoublement
+        [45960] = [Gauge(RdmManaStacks, 1)], [45961] = [Combo(Gauge(RdmManaStacks, 1))], [45962] = [Combo(Gauge(RdmManaStacks, 1))], // the same under Manafication
+        [7530] = [Gauge(RdmManaStacks, 1)], [37002] = [Combo(Gauge(RdmManaStacks, 1))], [37003] = [Combo(Gauge(RdmManaStacks, 1))], // Enchanted Moulinet/Deux/Trois
         // TODO: unbalanced mana
 
         // SCH — Aetherflow only; the fairy gauge fills passively (not modelled)
@@ -675,7 +677,7 @@ internal static unsafe class JobActions
         [2594] = [ActionId(24388)], [2845] = [ActionId(24386)], [2595] = [ActionId(24403)], [3905] = [ActionId(24394)],
         [3859] = [ActionId(24398)], [3860] = [ActionId(36973)],
         // RDM
-        [1234] = [ActionId(7510)], [1235] = [ActionId(7511)], [1238] = [ActionId(25855), ActionId(25856), ActionId(16526)],
+        [1234] = [ActionId(7510)], [1235] = [ActionId(7511)], [1238] = [ActionId(25855), ActionId(25856), ActionId(7505), ActionId(7507), ActionId(16526)],
         [3877] = [ActionId(37006)], [3876] = [ActionId(37005)], [3878] = [ActionId(37007)],
         // MCH
         [851] = [AnyWeaponskill()], [2688] = [ActionId(36978), ActionId(16497)],
@@ -732,10 +734,10 @@ internal static unsafe class JobActions
 
     public static bool Knows(uint actionId) => Actions.ContainsKey(actionId);
 
-    public static void ApplyEffects(SimCharacter caster, uint actionId, ulong targetId, System.Random rng)
+    public static void ApplyEffects(SimCharacter caster, uint actionId, ulong targetId, System.Random rng, bool hadAcceleration = false)
     {
         if (!Actions.TryGetValue(actionId, out var effects)) return;
-        var ctx = new ActionContext(actionId, targetId, caster, rng);
+        var ctx = new ActionContext(actionId, targetId, caster, rng, hadAcceleration);
         foreach (var effect in effects) effect.Apply(ctx);
     }
 
@@ -825,6 +827,7 @@ internal static unsafe class JobActions
     private static IActionEffect EnemyStatus(ushort statusId, float duration, int stacks = 0) => new EnemyStatusEffect(statusId, duration, stacks);
     private static IActionEffect Combo(params IActionEffect[] inner) => new ComboEffect(inner);
     private static IActionEffect Random(float chance, params IActionEffect[] inner) => new RandomEffect(chance, inner);
+    private static IActionEffect RandomOrAccel(float chance, params IActionEffect[] inner) => new RandomEffect(chance, inner, guaranteedUnderAcceleration: true);
     private static IActionEffect Unlocks(uint actionId, params IActionEffect[] inner) => new UnlocksEffect(actionId, inner);
 
     private static IActionPredicate ActionId(uint id) => new ActionIdPredicate(id);

@@ -21,6 +21,8 @@ public sealed class UmadP4FullScenario : IScenario
 
     public string Name => "Full";
     public IPhase Phase => UmadZone.P4;
+    public float BgmSecondsAtStart => 0f;
+    public float BgmStartDelaySeconds => cd;
     public bool SupportsSolo => true;
     public bool SupportsMultiplayer => false;
 

@@ -19,7 +19,8 @@ public sealed class UmadP2FullScenario : IScenario
 {
     public string Name => "Full";
     public IPhase Phase => UmadZone.P2;
-    public float BgmSecondsAtStart => 209.38f;
+    public float BgmSecondsAtStart => 0f;
+    public float BgmStartDelaySeconds => state?.CountdownSeconds ?? 0f;
     public bool SupportsSolo => true;
     public bool SupportsMultiplayer => false;
     public IReadOnlyList<IScenarioAi> AiStrats => [new UmadP2FullAi()];
@@ -68,7 +69,7 @@ public sealed class UmadP2FullScenario : IScenario
         party = world.Party;
         var suppressCd = SuppressNextCountdown;
         SuppressNextCountdown = false;
-        state = new UmadP2FullState(world.Rng, party, settingsWindow.Overrides, suppressCd ? 0f : 5.0f);
+        state = new UmadP2FullState(world.Rng, party, settingsWindow.Overrides, suppressCd ? 0f : settingsWindow.Overrides.CountdownSeconds);
         LastState = state;
         kefkaHuman = null;
         endAttackTargets = [];
@@ -343,12 +344,24 @@ public sealed class UmadP2FullScenario : IScenario
 
     private void SpawnTrineWave(IReadOnlyList<int> outerIndices, bool includeCenter, List<SimEventObject> bucket)
     {
-        if (includeCenter)
-            SpawnTrineProp(Vector2.Zero, state.TrineCenterIsRight, bucket);
+        var delay = 0f;
         for (var i = 0; i < outerIndices.Count; i++)
         {
             var (center, isRight) = UmadP2FullState.OuterTrines[outerIndices[i]];
-            SpawnTrineProp(center, isRight, bucket);
+            var d = delay;
+            if (d <= 0f)
+                SpawnTrineProp(center, isRight, bucket);
+            else
+                world.Events.Add(d, () => SpawnTrineProp(center, isRight, bucket));
+            delay += 0.15f;
+        }
+        if (includeCenter)
+        {
+            var d = delay;
+            if (d <= 0f)
+                SpawnTrineProp(Vector2.Zero, state.TrineCenterIsRight, bucket);
+            else
+                world.Events.Add(d, () => SpawnTrineProp(Vector2.Zero, state.TrineCenterIsRight, bucket));
         }
     }
 

@@ -57,9 +57,13 @@ public sealed class SimCast : ISimObject
     public void NativeCast(uint actionId, ActionType actionType, float omenDelay, float castTime, bool interruptible, float? rotation = null, Vector3? position = null, GameObjectId? targetId = null, GameObjectId? ballistaId = null)
     {
         var castRotation = rotation ?? parent.Rotation;
+        var globalPos = coordinates.ToGlobal(position ?? parent.Position);
         parent.Proxy?.ReceiveActorCast(new ActorCastData(
             actionId, actionType, castTime, omenDelay, interruptible,
-            castRotation, coordinates.ToGlobal(position ?? parent.Position), targetId, ballistaId));
+            castRotation, globalPos, targetId, ballistaId));
+        var srcName = (parent as SimEnemy)?.DisplayName ?? parent.Proxy?.Name ?? "Enemy";
+        var actName = Natives.Data.ActionName(actionId) ?? $"Action_{actionId:X}";
+        ActLogBridge.EmitStartsCasting(parent.EntityId, srcName, actionId, actName, (uint)(targetId?.ObjectId ?? 0), srcName, castTime, globalPos, castRotation);
 
         ActionId = actionId;
         Total = castTime;
@@ -75,10 +79,14 @@ public sealed class SimCast : ISimObject
         if (parent.Proxy is not { Exists: true } chara) return 0;
 
         var effectRotation = rotation ?? parent.Rotation;
+        var globalPos = coordinates.ToGlobal(position ?? parent.Position);
         var sequence = chara.ReceiveActionEffect(new ActionEffectData(
             actionId, actionType, animationLock, spellId, animationVariation, flags,
             effectRotation, coordinates.ToGlobal(position ?? Vector3.Zero),
             animationTargetId, targets, ballistaId));
+        var srcName = (parent as SimEnemy)?.DisplayName ?? chara.Name ?? "Enemy";
+        var actName = Natives.Data.ActionName(actionId) ?? $"Action_{actionId:X}";
+        ActLogBridge.EmitActionEffect(chara.EntityId, srcName, actionId, actName, globalPos, effectRotation, (uint)(animationTargetId?.ObjectId ?? 0), targets);
 
         remainingAnimationLock = animationLock;
         return sequence;

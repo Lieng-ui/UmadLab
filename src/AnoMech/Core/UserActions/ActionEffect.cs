@@ -17,7 +17,7 @@ internal interface IActionEffect
 
 // Per-dispatch state an effect may need. The caster is the local player for a real press, or
 // a bot for SimPartyNpc.UseAction.
-internal sealed class ActionContext(uint actionId, ulong targetId, SimCharacter caster, Random rng)
+internal sealed class ActionContext(uint actionId, ulong targetId, SimCharacter caster, Random rng, bool hadAcceleration = false)
 {
     public ulong TargetId { get; } = targetId;
     public uint ActionId { get; } = actionId;
@@ -25,6 +25,7 @@ internal sealed class ActionContext(uint actionId, ulong targetId, SimCharacter 
     // The job gauge and combo state are the local player's alone.
     public bool CasterIsPlayer => Caster is SimPlayer;
     public Random Rng { get; } = rng;
+    public bool HadAcceleration { get; } = hadAcceleration;
 }
 
 // Leaf: add an amount to a job gauge (ResourceGauge.Add clamps to [0, Max]).
@@ -129,11 +130,11 @@ internal sealed class UnlocksEffect(uint actionId, IActionEffect[] inner) : IAct
 }
 
 // Wrapper: apply the inner effects with `chance` probability (procs, e.g. DNC feathers).
-internal sealed class RandomEffect(float chance, IActionEffect[] inner) : IActionEffect
+internal sealed class RandomEffect(float chance, IActionEffect[] inner, bool guaranteedUnderAcceleration = false) : IActionEffect
 {
     public void Apply(ActionContext ctx)
     {
-        if (ctx.Rng.NextSingle() >= chance) return;
+        if (!(guaranteedUnderAcceleration && ctx.HadAcceleration) && ctx.Rng.NextSingle() >= chance) return;
         foreach (var e in inner) e.Apply(ctx);
     }
 }

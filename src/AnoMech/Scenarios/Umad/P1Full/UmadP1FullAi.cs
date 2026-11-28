@@ -630,8 +630,13 @@ public sealed class UmadP1FullAi : IScenarioAi<UmadP1FullState>
         Dictionary<PartyRole, Vector2> assignedSpots,
         bool preTurnStep)
     {
-        var ori = state.ThunderOrientation;
-        var offset = state.ThunderRealOffset;
+        var dirN4 = (state.ThunderOrientation > 0f, state.ThunderRealOffset == 0) switch
+        {
+            (true, false) => 0,
+            (false, true) => 1,
+            (true, true) => 2,
+            _ => 3,
+        };
         var turnOffset = preTurnStep
             ? new Vector2(0f, state.GazeInverted ? 0.35f : -0.35f)
             : Vector2.Zero;
@@ -639,76 +644,57 @@ public sealed class UmadP1FullAi : IScenarioAi<UmadP1FullState>
         var coords = new Vector2?[8];
         if (state.FireIsStack)
         {
-            var (supportPerp, dpsPerp) = (ori < 0f, offset == 0) switch
+            var supportSpot = dirN4 switch
             {
-                (true, true) => (7.0f, -12.2f),
-                (true, false) => (12.2f, -7.0f),
-                (false, true) => (-12.2f, 7.0f),
-                (false, false) => (-7.0f, 12.2f),
-            };
-            var supportSpot = LanePointPerp(supportPerp, 0f, ori) + turnOffset;
-            var dpsSpot = LanePointPerp(dpsPerp, 0f, ori) + turnOffset;
+                0 => new Vector2(-5.0f, -5.0f),
+                1 => new Vector2(-7.3f, -3.0f),
+                2 => new Vector2(-9.2f, -9.2f),
+                _ => new Vector2(-3.0f, -7.3f),
+            } + turnOffset;
+            var dpsSpot = dirN4 switch
+            {
+                0 => new Vector2(9.2f, 9.2f),
+                1 => new Vector2(3.0f, 7.3f),
+                2 => new Vector2(5.0f, 5.0f),
+                _ => new Vector2(7.3f, 3.0f),
+            } + turnOffset;
             foreach (var role in state.Debuffs.Keys)
                 coords[(int)role] = UmadP1TeleTrouncingState.IsDps(role) ? dpsSpot : supportSpot;
             return AiMove.Create(coords);
         }
 
-        var sIn = offset == 0 ? 1f : -1f;
-        var pOut = -sIn * 12.2f;
-        var pHi = sIn * 7.8f;
-        var pLo = sIn * 2.2f;
-
-        if (ori < 0f && offset == 0)
+        var rotAngle = -MathF.PI / 4f - dirN4 * (MathF.PI / 2f);
+        var cos = MathF.Cos(rotAngle);
+        var sin = MathF.Sin(rotAngle);
+        foreach (var role in state.Debuffs.Keys)
         {
-            coords[(int)PartyRole.RegenHealer] = LanePointPerp(pOut, -10.5f, ori) + turnOffset;
-            coords[(int)PartyRole.MeleeDpsA] = LanePointPerp(pOut, 0f, ori) + turnOffset;
-            coords[(int)PartyRole.CasterDps] = LanePointPerp(pOut, 10.5f, ori) + turnOffset;
-            coords[(int)PartyRole.ShieldHealer] = LanePointPerp(pHi, -11.5f, ori) + turnOffset;
-            coords[(int)PartyRole.OffTank] = LanePointPerp(pHi, 0f, ori) + turnOffset;
-            coords[(int)PartyRole.PhysRangedDps] = LanePointPerp(pHi, 11.5f, ori) + turnOffset;
-            coords[(int)PartyRole.MainTank] = LanePointPerp(pLo, -7.0f, ori) + turnOffset;
-            coords[(int)PartyRole.MeleeDpsB] = LanePointPerp(pLo, 7.0f, ori) + turnOffset;
-        }
-        else if (ori < 0f)
-        {
-            coords[(int)PartyRole.ShieldHealer] = LanePointPerp(pOut, -10.5f, ori) + turnOffset;
-            coords[(int)PartyRole.OffTank] = LanePointPerp(pOut, 0f, ori) + turnOffset;
-            coords[(int)PartyRole.PhysRangedDps] = LanePointPerp(pOut, 10.5f, ori) + turnOffset;
-            coords[(int)PartyRole.RegenHealer] = LanePointPerp(pHi, -11.5f, ori) + turnOffset;
-            coords[(int)PartyRole.MeleeDpsA] = LanePointPerp(pHi, 0f, ori) + turnOffset;
-            coords[(int)PartyRole.CasterDps] = LanePointPerp(pHi, 11.5f, ori) + turnOffset;
-            coords[(int)PartyRole.MainTank] = LanePointPerp(pLo, -7.0f, ori) + turnOffset;
-            coords[(int)PartyRole.MeleeDpsB] = LanePointPerp(pLo, 7.0f, ori) + turnOffset;
-        }
-        else if (offset == 0)
-        {
-            coords[(int)PartyRole.RegenHealer] = LanePointPerp(pOut, -10.5f, ori) + turnOffset;
-            coords[(int)PartyRole.MainTank] = LanePointPerp(pOut, 0f, ori) + turnOffset;
-            coords[(int)PartyRole.ShieldHealer] = LanePointPerp(pOut, 10.5f, ori) + turnOffset;
-            coords[(int)PartyRole.CasterDps] = LanePointPerp(pHi, -11.5f, ori) + turnOffset;
-            coords[(int)PartyRole.MeleeDpsB] = LanePointPerp(pHi, 0f, ori) + turnOffset;
-            coords[(int)PartyRole.PhysRangedDps] = LanePointPerp(pHi, 11.5f, ori) + turnOffset;
-            coords[(int)PartyRole.MeleeDpsA] = LanePointPerp(pLo, -7.0f, ori) + turnOffset;
-            coords[(int)PartyRole.OffTank] = LanePointPerp(pLo, 7.0f, ori) + turnOffset;
-        }
-        else
-        {
-            coords[(int)PartyRole.CasterDps] = LanePointPerp(pOut, -10.5f, ori) + turnOffset;
-            coords[(int)PartyRole.MeleeDpsB] = LanePointPerp(pOut, 0f, ori) + turnOffset;
-            coords[(int)PartyRole.PhysRangedDps] = LanePointPerp(pOut, 10.5f, ori) + turnOffset;
-            coords[(int)PartyRole.RegenHealer] = LanePointPerp(pHi, -11.5f, ori) + turnOffset;
-            coords[(int)PartyRole.MainTank] = LanePointPerp(pHi, 0f, ori) + turnOffset;
-            coords[(int)PartyRole.ShieldHealer] = LanePointPerp(pHi, 11.5f, ori) + turnOffset;
-            coords[(int)PartyRole.MeleeDpsA] = LanePointPerp(pLo, -7.0f, ori) + turnOffset;
-            coords[(int)PartyRole.OffTank] = LanePointPerp(pLo, 7.0f, ori) + turnOffset;
+            var baseDir = role switch
+            {
+                PartyRole.MainTank => 1,
+                PartyRole.OffTank => 3,
+                PartyRole.RegenHealer => 0,
+                PartyRole.ShieldHealer => 2,
+                PartyRole.MeleeDpsA => 7,
+                PartyRole.MeleeDpsB => 5,
+                PartyRole.PhysRangedDps => 4,
+                _ => 6,
+            };
+            var relDir8 = ((baseDir - 2 * dirN4 - 1) % 8 + 8) % 8;
+            var local = relDir8 switch
+            {
+                0 => new Vector2(0.0f, -8.0f),
+                1 => new Vector2(-9.0f, -8.5f),
+                2 => new Vector2(-8.0f, -1.5f),
+                3 => new Vector2(-11.5f, 11.5f),
+                4 => new Vector2(0.0f, 11.0f),
+                5 => new Vector2(11.5f, 11.5f),
+                6 => new Vector2(8.0f, -1.5f),
+                _ => new Vector2(9.0f, -8.5f),
+            };
+            var worldSpot = new Vector2(local.X * cos - local.Y * sin, local.X * sin + local.Y * cos);
+            coords[(int)role] = worldSpot + turnOffset;
         }
 
         return AiMove.Create(coords);
-    }
-
-    private static Vector2 LanePointPerp(float perp, float along, float orientation)
-    {
-        const float invSqrt2 = 0.70710678f;
-        return new Vector2((perp - along) * invSqrt2 * orientation, (perp + along) * invSqrt2);
     }
 }

@@ -339,6 +339,8 @@ public static class UmadConstants
         public const ushort ThunderCharged            = (ushort)0x5CD;
         public const ushort Accretion                 = (ushort)0x644;
         public const ushort KefkaLiesVfx              = (ushort)0x808;
+        public const ushort OrchestraFlareStatus      = 0x14E6;
+        public const ushort OrchestraHolyStatus       = 0x14E7;
         // Kefka's P3 aura: param 0x1FF after Trance, 0x22B after Ring of Fire.
         public const ushort KefkaTrance               = (ushort)0x8E1;
         public const ushort DownForTheCount           = (ushort)0x306;

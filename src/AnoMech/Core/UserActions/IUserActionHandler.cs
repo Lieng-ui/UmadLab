@@ -22,6 +22,9 @@ internal interface IUserActionHandler
     // A player action began a cast bar; OnAction follows if it completes, OnCastInterrupted if not.
     void OnCastStart(ActionType actionType, uint actionId) { }
 
+    // Same, for a handler that needs who the cast is aimed at.
+    void OnCastStart(ActionType actionType, uint actionId, ulong targetId) => OnCastStart(actionType, actionId);
+
     void OnCastInterrupted(ActionType actionType, uint actionId) { }
 
     // A scenario started — reset cooldowns/gauges the server would otherwise track.

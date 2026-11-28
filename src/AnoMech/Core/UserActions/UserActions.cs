@@ -154,7 +154,7 @@ public sealed unsafe class UserActions : IUserActions
             pendingTotal = bc->CastInfo.TotalCastTime;
             pendingMax = bc->CastInfo.CurrentCastTime;
             Acted?.Invoke(new PlayerAction(PlayerActionStep.CastStarted, actionType, actionId, targetId, pendingTotal));
-            foreach (var handler in handlers) if (Runs(handler)) handler.OnCastStart(actionType, actionId);
+            foreach (var handler in handlers) if (Runs(handler)) handler.OnCastStart(actionType, actionId, targetId);
         }
         else
         {

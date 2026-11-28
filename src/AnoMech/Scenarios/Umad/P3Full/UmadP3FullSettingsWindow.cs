@@ -6,10 +6,8 @@ public sealed class UmadP3FullSettingsWindow
 {
     public UmadP3FullStateOverrides Overrides { get; } = new();
 
-    private static readonly string[] OrderLabels = ["随机 (火先/水先)", "短火长水 (19s火 / 46s水)", "短水长火 (19s水 / 46s火)"];
-    private static readonly string[] ImplosionLabels = ["随机 (经度/纬度)", "经度聚爆 (前后->左右)", "纬度聚爆 (左右->前后)"];
-    private static readonly string[] DirLabels = ["随机 (顺/逆时针)", "顺时针", "逆时针"];
     private static readonly string[] NumberLabels = ["随机", "1 号", "2 号", "3 号", "4 号", "5 号", "6 号", "7 号", "8 号"];
+    private static readonly string[] TetherPriorityLabels = ["DHT (D1-4 > H1-2 > MT > ST)", "DHT (D1-4 > H1-2 > ST > MT)", "DTN (D1-4 > MT > ST > H1-2)"];
 
     public void Draw()
     {
@@ -17,21 +15,13 @@ public sealed class UmadP3FullSettingsWindow
         if (ImGui.SliderFloat("开怪倒数 (秒)", ref cd, 0f, 15f, "%.0f s"))
             Overrides.CountdownSeconds = cd;
 
-        var orderIdx = Overrides.FireFirst switch { true => 1, false => 2, null => 0 };
-        if (ImGui.Combo("一运火水顺序", ref orderIdx, OrderLabels, OrderLabels.Length))
-            Overrides.FireFirst = orderIdx switch { 1 => true, 2 => false, _ => null };
-
-        var impIdx = Overrides.LongitudinalFirst switch { true => 1, false => 2, null => 0 };
-        if (ImGui.Combo("经纬度聚爆", ref impIdx, ImplosionLabels, ImplosionLabels.Length))
-            Overrides.LongitudinalFirst = impIdx switch { 1 => true, 2 => false, _ => null };
-
-        var dirIdx = Overrides.Clockwise switch { true => 1, false => 2, null => 0 };
-        if (ImGui.Combo("麻将旋转方向", ref dirIdx, DirLabels, DirLabels.Length))
-            Overrides.Clockwise = dirIdx switch { 1 => true, 2 => false, _ => null };
-
         var numIdx = Overrides.PlayerNumber is >= 1 and <= 8 ? Overrides.PlayerNumber.Value : 0;
         if (ImGui.Combo("自身麻将序号", ref numIdx, NumberLabels, NumberLabels.Length))
             Overrides.PlayerNumber = numIdx == 0 ? null : numIdx;
+
+        var prioIdx = (int)Overrides.TetherPriority;
+        if (ImGui.Combo("二运接线优先级", ref prioIdx, TetherPriorityLabels, TetherPriorityLabels.Length))
+            Overrides.TetherPriority = (BlackHoleTetherPriority)prioIdx;
 
         var chaosDelay = Overrides.ChaosKillDelayAfterBigBangSec;
         if (ImGui.SliderFloat("顶起后卡奥斯击杀 (秒)", ref chaosDelay, 5.0f, 25.0f, "+%.1f s"))

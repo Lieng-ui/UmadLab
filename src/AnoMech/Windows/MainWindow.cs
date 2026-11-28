@@ -91,7 +91,7 @@ public unsafe class MainWindow : Window, IDisposable
     // Labels are the canonical raid role abbreviations: MT/OT tanks, H1/H2 healers
     // (H1 = regen), M1/M2 melee DPS, R1/R2 ranged DPS (R1 = phys).
     private static readonly string[] RoleLabels =
-        ["Auto", "MT", "OT", "H1", "H2", "M1", "M2", "R1", "R2"];
+        ["自动", "MT", "ST", "H1", "H2", "D1", "D2", "D3", "D4"];
 
 #if DEBUG
     private readonly DebugMenu debugMenu;
@@ -109,7 +109,7 @@ public unsafe class MainWindow : Window, IDisposable
     }
 
     // The title bar still shows while the window is collapsed for the run.
-    private static string Title(bool failed) => $"{TitleText}{(failed ? " — Failed" : "")}###MainWindow";
+    private static string Title(bool failed) => $"{TitleText}{(failed ? " — 失败" : "")}###MainWindow";
 
     public MainWindow(Plugin plugin)
         : base(Title(failed: false))
@@ -140,7 +140,7 @@ public unsafe class MainWindow : Window, IDisposable
                 Plugin.Config.Save();
             },
             ShowTooltip = () => ImGui.SetTooltip(
-                $"Auto-collapse while running: {(Plugin.Config.AutoCollapseWhileRunning ? "On" : "Off")}"),
+                $"运行中自动折叠: {(Plugin.Config.AutoCollapseWhileRunning ? "开" : "关")}"),
         };
         TitleBarButtons.Add(autoCollapseButton);
 
@@ -151,7 +151,7 @@ public unsafe class MainWindow : Window, IDisposable
             IconOffset = new Vector2(2f, 1f) * uiScale,
             Priority = 0,
             Click = _ => plugin.ToggleConfigUi(),
-            ShowTooltip = () => ImGui.SetTooltip("Settings"),
+            ShowTooltip = () => ImGui.SetTooltip("插件设置"),
         });
 #if DEBUG
         debugMenu = new DebugMenu(plugin);
@@ -320,7 +320,7 @@ public unsafe class MainWindow : Window, IDisposable
             widest = Math.Max(widest, ImGui.CalcTextSize(zone.Name).X + style.IndentSpacing);
             foreach (var phase in Plugin.Game.Catalog.PhasesOf(zone))
                 foreach (var scenario in Plugin.Game.Catalog.ScenariosOf(phase))
-                    widest = Math.Max(widest, ImGui.CalcTextSize(scenario.DisplayName()).X + style.IndentSpacing);
+                    widest = Math.Max(widest, ImGui.CalcTextSize(FormatScenarioLabel(scenario)).X + style.IndentSpacing);
         }
         var measured = widest
             + style.FramePadding.X * 2
@@ -336,7 +336,7 @@ public unsafe class MainWindow : Window, IDisposable
         // Switching scenarios inside a loaded zone skips the zone reload, so another zone's
         // scenario would run on the wrong territory.
         var lockedZone = Plugin.Game.World.Map.IsInInstance ? _selectedScenario?.Phase.Zone : null;
-        ImGui.TextUnformatted(lockedZone?.Name ?? "Scenarios");
+        ImGui.TextUnformatted(lockedZone?.Name ?? "场景列表");
         ImGui.Separator();
 
         if (lockedZone != null)
@@ -391,7 +391,7 @@ public unsafe class MainWindow : Window, IDisposable
                 ImGui.PushID(scenario.FullName());
                 var buttonWidth = sectionRight - ImGui.GetCursorScreenPos().X;
                 ImGui.BeginDisabled(mpUnsupported || guest);
-                var clicked = ImGui.Button(scenario.DisplayName(), new Vector2(buttonWidth, 0));
+                var clicked = ImGui.Button(FormatScenarioLabel(scenario), new Vector2(buttonWidth, 0));
                 ImGui.EndDisabled();
                 if ((mpUnsupported || guest) && ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
                     ImGui.SetTooltip(guest ? "The host picks the scenario." : "This scenario doesn't support multiplayer.");
@@ -467,7 +467,8 @@ public unsafe class MainWindow : Window, IDisposable
         {
             DrawScenarioPanelToggle();
             ImGui.SameLine();
-            ImGui.TextDisabled("Select a scenario");
+            ImGui.TextDisabled("请选择一个场景");
+            DrawBridgeStatus();
             if (inSession) DrawSession();
             else DrawMultiplayerButton();
             return;
@@ -483,7 +484,7 @@ public unsafe class MainWindow : Window, IDisposable
         DrawScenarioHeader(game);
         if (inSession) DrawSession();
         DrawPrimaryActions(game, inSession);
-        if (!inSession) DrawSoloOption(game);
+        // Solo mode removed
         DrawLocationHint();
         DrawRunOptions(game, Plugin.Practice, inSession);
 
@@ -593,7 +594,7 @@ public unsafe class MainWindow : Window, IDisposable
         var hasSetup = !inSession || HasStratChoice(scenario) || HasWaymarkChoice(scenario);
         if (hasSetup)
         {
-            if (ImGui.TreeNodeEx("Setup###scenario-setup-v3",
+            if (ImGui.TreeNodeEx("基础设置###scenario-setup-v3",
                     ImGuiTreeNodeFlags.DefaultOpen | ImGuiTreeNodeFlags.FramePadding))
             {
                 if (SettingsGrid.Begin("##scenario-setup-grid"))
@@ -608,7 +609,7 @@ public unsafe class MainWindow : Window, IDisposable
             ImGui.Spacing();
         }
 
-        if (ImGui.TreeNodeEx("Scenario settings###scenario-config-v3",
+        if (ImGui.TreeNodeEx("阶段设置###scenario-config-v3",
                 ImGuiTreeNodeFlags.FramePadding))
         {
             if (inSession)
@@ -651,8 +652,9 @@ public unsafe class MainWindow : Window, IDisposable
         ImGui.SameLine();
         ImGui.TextDisabled($"{scenario.Phase.Zone.Name} —");
         ImGui.SameLine(0f, 4f * uiScale);
-        ImGui.TextUnformatted(scenario.DisplayName());
+        ImGui.TextUnformatted(FormatScenarioLabel(scenario));
         DrawRunStatus(game);
+        DrawBridgeStatus();
 
         var dividerColor = StyleColor(ImGuiCol.TextDisabled);
         dividerColor.W *= 0.35f;
@@ -680,21 +682,56 @@ public unsafe class MainWindow : Window, IDisposable
         ImGui.EndTooltip();
     }
 
+    // Green while the bridge is switched on, grey while it is off. Whether an Endpoint is actually
+    // listening is only in the tooltip: one colour per switch state keeps the dot readable at a glance.
+    private static void DrawBridgeStatus()
+    {
+        var scale = ImGuiHelpers.GlobalScale;
+        var enabled = Plugin.Config?.EnableActBridge ?? false;
+        var connected = enabled && AnoMech.Core.Game.ActLogBridge.IsConnected;
+        var color = enabled
+            ? new Vector4(0.40f, 0.85f, 0.40f, 1f)
+            : new Vector4(0.55f, 0.55f, 0.55f, 1f);
+
+        ImGui.SameLine(0f, 10f * scale);
+        var lineHeight = ImGui.GetTextLineHeight();
+        var radius = lineHeight * 0.28f;
+        var cursor = ImGui.GetCursorScreenPos();
+        ImGui.GetWindowDrawList().AddCircleFilled(
+            new Vector2(cursor.X + radius, cursor.Y + lineHeight * 0.5f),
+            radius,
+            ImGui.GetColorU32(color));
+        ImGui.Dummy(new Vector2(radius * 2f, lineHeight));
+        ImGui.SameLine(0f, 3f * scale);
+        ImGui.TextColored(color, enabled ? "桥接功能已启用" : "桥接功能已禁用");
+
+        if (!ImGui.IsItemHovered()) return;
+        ImGui.BeginTooltip();
+        if (!enabled)
+            ImGui.TextUnformatted("在设置里勾选「ACT / 宝宝椅桥接 (Endpoint)」即可启用。");
+        else if (connected)
+            ImGui.TextUnformatted($"已连通 Triggernometry，已发送 {AnoMech.Core.Game.ActLogBridge.SentCount} 行。");
+        else
+            ImGui.TextUnformatted("等待 Endpoint —— 请在 Triggernometry 设置里启用 Endpoint（默认端口 51423）。");
+        if (enabled) ImGui.TextDisabled(Plugin.Config?.ActBridgeEndpointUrl ?? "");
+        ImGui.EndTooltip();
+    }
+
     // The live run's state, else how the selected scenario's last run ended.
     private (string Label, Vector4 Color) RunStatus(AnoMech.Core.Game.Game game)
     {
-        var idle = ("Idle", StyleColor(ImGuiCol.TextDisabled));
-        if (game.LastRun is not { } run) return RunActive ? ("Running", RunningColor) : idle;
+        var idle = ("待机", StyleColor(ImGuiCol.TextDisabled));
+        if (game.LastRun is not { } run) return RunActive ? ("运行中", RunningColor) : idle;
         if (run.Ended && run.Scenario != _selectedScenario) return idle;
         var status = run.Status;
-        if (IsFailed(status)) return ("Failed", FailedColor);
+        if (IsFailed(status)) return ("已失败", FailedColor);
         return status switch
         {
-            SessionStatus.Succeeded => ("Cleared", RunningColor),
-            SessionStatus.CompletedWithMistake => ("Cleared with mistakes", MistakeColor),
-            _ when run.Ended => ("Stopped", StyleColor(ImGuiCol.TextDisabled)),
-            SessionStatus.RunningWithMistake => ("Running with mistakes", MistakeColor),
-            _ => ("Running", RunningColor),
+            SessionStatus.Succeeded => ("已通过", RunningColor),
+            SessionStatus.CompletedWithMistake => ("有失误通过", MistakeColor),
+            _ when run.Ended => ("已停止", StyleColor(ImGuiCol.TextDisabled)),
+            SessionStatus.RunningWithMistake => ("运行中（有失误）", MistakeColor),
+            _ => ("运行中", RunningColor),
         };
     }
 
@@ -758,7 +795,7 @@ public unsafe class MainWindow : Window, IDisposable
             DrawStartButton(game, actionSize);
         else if (RunActive)
         {
-            if (DrawSemanticButton("Stop", actionSize, StopColor))
+            if (DrawSemanticButton("停止", actionSize, StopColor))
                 plugin.Runs.Reset();
         }
         else
@@ -767,13 +804,13 @@ public unsafe class MainWindow : Window, IDisposable
         if (!inSession && RunLive(game))
         {
             ImGui.SameLine();
-            if (DrawSemanticButton("Stop###stop", actionSize, StopRunColor))
+            if (DrawSemanticButton("停止###stop", actionSize, StopRunColor))
                 plugin.Runs.Reset();
         }
         else if (game.World.Map.IsInInstance)
         {
             ImGui.SameLine();
-            if (DrawSemanticButton(inSession ? "Return to inn###leave-instance" : "Leave###leave-instance", actionSize, StopColor))
+            if (DrawSemanticButton(inSession ? "返回旅馆###leave-instance" : "离开副本###leave-instance", actionSize, StopColor))
                 plugin.Runs.Leave();
             if (inSession && ImGui.IsItemHovered())
                 ImGui.SetTooltip("Takes the whole party back to the inn. Everyone stays in the session.");
@@ -800,7 +837,7 @@ public unsafe class MainWindow : Window, IDisposable
 #endif
     }
 
-    private bool SoloSelected => _selectedScenario is { SupportsSolo: true } && _soloMode;
+    private bool SoloSelected => false;
 
     // A start replaces whatever run is standing, so it needs no Stop first.
     private void DrawStartButton(AnoMech.Core.Game.Game game, Vector2 size)
@@ -809,7 +846,7 @@ public unsafe class MainWindow : Window, IDisposable
         var selection = Selection;
         var refusal = plugin.Runs.StartRefusal(selection, solo);
         var restart = game.ActiveScenario is { } active && active == _selectedScenario;
-        var label = plugin.Runs.StartWaitingOn != null ? "Waiting to start..." : restart ? "Restart" : "Start";
+        var label = plugin.Runs.StartWaitingOn != null ? "准备开始..." : restart ? "重新开始" : "开始";
         ImGui.BeginDisabled(refusal != null);
         if (DrawSemanticButton($"{label}###start", size, StartColor))
             plugin.Runs.Start(selection, solo);
@@ -886,31 +923,19 @@ public unsafe class MainWindow : Window, IDisposable
                 : "Run without simulated party members or party AI.");
     }
 
-    // God mode and auto-restart are disabled while a session is being set up or is live; forced
+    // God mode is disabled while a session is being set up or is live; forced
     // off, not just disabled, so a stale value can't apply.
     private static void DrawRunOptions(AnoMech.Core.Game.Game game, PracticeLoop practice, bool mpActive)
     {
+        practice.AutoRestart = false;
         ImGui.Spacing();
         if (mpActive) game.GodMode = false;
         ImGui.BeginDisabled(mpActive);
         var god = game.GodMode;
-        if (ImGui.Checkbox("God mode", ref god)) game.GodMode = god;
+        if (ImGui.Checkbox("无敌模式", ref god)) game.GodMode = god;
         ImGui.EndDisabled();
         if (mpActive && ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
             ImGui.SetTooltip(MpDisabledReason);
-        ImGui.SameLine();
-        // A host rerunning on its own would desync the session, so this is solo-only.
-        if (mpActive) practice.AutoRestart = false;
-        ImGui.BeginDisabled(mpActive);
-        var autoRestart = practice.AutoRestart;
-        if (ImGui.Checkbox("Auto-restart", ref autoRestart)) practice.AutoRestart = autoRestart;
-        ImGui.EndDisabled();
-        if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-            ImGui.SetTooltip(mpActive
-                ? MpDisabledReason
-                : "Restart the same scenario immediately after a successful run. A failed run turns this back off.");
-        ImGui.SameLine();
-        ImGui.TextDisabled($"Streak: {practice.Streak}");
     }
 
     // Drawn below the strat picker for scenarios that declare WaymarkPresets. _selectedWaymark
@@ -926,7 +951,7 @@ public unsafe class MainWindow : Window, IDisposable
         var labels = new string[presets.Count];
         for (var i = 0; i < presets.Count; i++) labels[i] = presets[i].Name;
 
-        SettingsGrid.Row("Waymarks:");
+        SettingsGrid.Row("场标:");
         ImGui.SetNextItemWidth(SetupDropdownWidth * ImGuiHelpers.GlobalScale);
         if (ImGui.Combo("##waymarks", ref _selectedWaymark, labels, labels.Length))
         {
@@ -939,7 +964,7 @@ public unsafe class MainWindow : Window, IDisposable
     private void DrawRoleSelector()
     {
         var idx = _roleOverride is { } role ? (int)role + 1 : 0;
-        SettingsGrid.Row("Role:");
+        SettingsGrid.Row("位置:");
         ImGui.SetNextItemWidth(SetupDropdownWidth * ImGuiHelpers.GlobalScale);
         if (ImGui.Combo("##role", ref idx, RoleLabels, RoleLabels.Length))
             _roleOverride = idx == 0 ? null : (PartyRole)(idx - 1);
@@ -961,7 +986,7 @@ public unsafe class MainWindow : Window, IDisposable
         {
             var labels = new string[strats.Count];
             for (var i = 0; i < strats.Count; i++) labels[i] = strats[i].Name;
-            SettingsGrid.Row("Strategy:");
+            SettingsGrid.Row("打法:");
             ImGui.SetNextItemWidth(SetupDropdownWidth * ImGuiHelpers.GlobalScale);
             ImGui.Combo("##strat", ref _selectedStrat, labels, labels.Length);
         }
@@ -973,7 +998,7 @@ public unsafe class MainWindow : Window, IDisposable
     // Region buttons + a region-filtered strat dropdown, over the pick ReconcileStrat keeps valid.
     private void DrawGroupedStratSelector(IReadOnlyList<IScenarioAi> strats, IReadOnlyList<string> groups)
     {
-        SettingsGrid.Row("Region:");
+        SettingsGrid.Row("区服:");
         for (var i = 0; i < groups.Count; i++)
         {
             if (i > 0) ImGui.SameLine();
@@ -992,7 +1017,7 @@ public unsafe class MainWindow : Window, IDisposable
         }
 
         var filtered = RegionStrats(strats);
-        SettingsGrid.Row("Strategy:");
+        SettingsGrid.Row("打法:");
         if (filtered.Count == 0)
         {
             ImGui.TextDisabled("(no strats for this region yet)");
@@ -1028,8 +1053,18 @@ public unsafe class MainWindow : Window, IDisposable
     private void DrawLocationHint()
     {
         if (ZoneControl.IsInInn()) return;
-        ImGui.TextDisabled("Scenarios only run in an inn");
+        ImGui.TextDisabled("仅可在旅馆内启动模拟场景");
         ImGui.SameLine();
-        ImGuiComponents.HelpMarker("Scenarios can only be started from an inn — return to one to run a scenario.");
+        ImGuiComponents.HelpMarker("请先回到旅馆再启动模拟场景。");
     }
+
+    private static string FormatScenarioLabel(IScenario scenario) => scenario.DisplayName() switch
+    {
+        "P1 Full" => "P1 凯夫卡",
+        "P2 Full" => "P2 神凯夫卡",
+        "P3 Full" => "P3 双神",
+        "P4 Full" => "P4 凯夫卡",
+        "P5 Full" => "P5 神凯夫卡",
+        var other => other,
+    };
 }

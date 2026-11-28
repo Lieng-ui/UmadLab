@@ -97,46 +97,53 @@ public sealed class UmadP4FullAi : IScenarioAi<UmadP4FullState>
         });
     }
 
-    private static (Vector2 Edge, Vector2 South, Vector2 SafeSide) Wave1ThunderLane(MysteryCast thunder)
+    private static (Vector2 Right, Vector2 Down) Wave1GazeBasis(MysteryCast thunder)
     {
         var rot = LineBaseRotation * thunder.LightningOrientation;
-        var lane = new Vector2(MathF.Sin(rot), MathF.Cos(rot));
-        var south = lane.Y >= 0f ? lane : -lane;
-        var across = new Vector2(-south.Y, south.X);
-        var safeSide = LineClearance(across * ThunderEdgeProbe, thunder) > LineClearance(-across * ThunderEdgeProbe, thunder) ? across : -across;
-        return (safeSide * ThunderEdgeInset, south, safeSide);
+        var fwd = new Vector2(MathF.Sin(rot), MathF.Cos(rot));
+        Vector2 outerMid = new(0f, 1f);
+        for (var i = 0; i < 4; i++)
+        {
+            if ((i + thunder.LightningOffset) % 2 != 0) continue;
+            var anchor = new Vector2(LineAnchors[i].X * thunder.LightningOrientation, LineAnchors[i].Y);
+            var mid = anchor + fwd * 20f;
+            if (mid.LengthSquared() > 100f)
+            {
+                outerMid = mid;
+                break;
+            }
+        }
+        var down = Vector2.Normalize(outerMid);
+        var right = new Vector2(down.Y, -down.X);
+        return (right, down);
     }
 
     private static IAiMove CnWave1Gaze(RoleList wave, MysteryCast thunder, bool isTrue)
     {
-        var (edge, south, safeSide) = Wave1ThunderLane(thunder);
+        var (right, down) = Wave1GazeBasis(thunder);
         var coords = new Vector2?[8];
         int[] others = [1, 2, 3, 5, 6, 7];
 
         if (isTrue)
         {
-            coords[(int)wave[0]] = edge + south * 7.8f;
-            coords[(int)wave[4]] = edge + south * 9.8f;
+            coords[(int)wave[0]] = right * -1f + down * 8f;
+            coords[(int)wave[4]] = right * 1f + down * 8f;
             for (var k = 0; k < others.Length; k++)
             {
-                var along = 2.0f + (k % 3) * 0.7f;
-                var side = (k / 3 - 0.5f) * 0.8f;
-                var cand = edge + south * along + safeSide * side;
-                if (LineClearance(cand, thunder) < 0.8f) cand = edge + south * along;
-                coords[(int)wave[others[k]]] = cand;
+                var rx = (k % 3 - 1f) * 0.45f;
+                var dy = 4f + (k / 3 - 0.5f) * 0.45f;
+                coords[(int)wave[others[k]]] = right * rx + down * dy;
             }
         }
         else
         {
-            coords[(int)wave[0]] = edge + south * 0.8f;
-            coords[(int)wave[4]] = edge + south * 2.8f;
+            coords[(int)wave[0]] = right * -4f + down * 1f;
+            coords[(int)wave[4]] = right * 4f + down * 1f;
             for (var k = 0; k < others.Length; k++)
             {
-                var along = 6.8f + (k % 3) * 0.9f;
-                var side = (k / 3 - 0.5f) * 0.8f;
-                var cand = edge + south * along + safeSide * side;
-                if (LineClearance(cand, thunder) < 0.8f) cand = edge + south * along;
-                coords[(int)wave[others[k]]] = cand;
+                var rx = (k % 3 - 1f) * 0.45f;
+                var dy = 8f + (k / 3 - 0.5f) * 0.45f;
+                coords[(int)wave[others[k]]] = right * rx + down * dy;
             }
         }
         return AiMove.Create(coords).NaturalOrder();
@@ -144,8 +151,8 @@ public sealed class UmadP4FullAi : IScenarioAi<UmadP4FullState>
 
     private static void FaceWave1GazeBots(SimWorld world, RoleList wave, MysteryCast thunder, bool isTrue)
     {
-        var (_, south, _) = Wave1ThunderLane(thunder);
-        var south3 = new Vector3(south.X, 0f, south.Y);
+        var (_, down) = Wave1GazeBasis(thunder);
+        var down3 = new Vector3(down.X, 0f, down.Y);
         var g0 = world.Party.Get(wave[0]);
         var g4 = world.Party.Get(wave[4]);
         for (var i = 0; i < 8; i++)
@@ -159,7 +166,7 @@ public sealed class UmadP4FullAi : IScenarioAi<UmadP4FullState>
             else if (role == wave[4] && g0 is not null)
                 m.Face(isTrue ? m.Position - (g0.Position - m.Position) : g0.Position);
             else
-                m.Face(m.Position - south3 * 5f);
+                m.Face(m.Position - down3 * 5f);
         }
     }
 
@@ -170,23 +177,23 @@ public sealed class UmadP4FullAi : IScenarioAi<UmadP4FullState>
 
         if (isTrue)
         {
-            coords[(int)wave[0]] = new Vector2(-1.8f, 8.2f);
-            coords[(int)wave[4]] = new Vector2(1.8f, 8.2f);
+            coords[(int)wave[0]] = new Vector2(-1f, 8f);
+            coords[(int)wave[4]] = new Vector2(1f, 8f);
             for (var k = 0; k < others.Length; k++)
             {
-                var x = (k % 3 - 1f) * 0.9f;
-                var y = 2.6f + (k / 3) * 0.9f;
+                var x = (k % 3 - 1f) * 0.45f;
+                var y = 4f + (k / 3 - 0.5f) * 0.45f;
                 coords[(int)wave[others[k]]] = new Vector2(x, y);
             }
         }
         else
         {
-            coords[(int)wave[0]] = new Vector2(-1.6f, 1.8f);
-            coords[(int)wave[4]] = new Vector2(1.6f, 1.8f);
+            coords[(int)wave[0]] = new Vector2(-4f, 0f);
+            coords[(int)wave[4]] = new Vector2(4f, 0f);
             for (var k = 0; k < others.Length; k++)
             {
-                var x = (k % 3 - 1f) * 0.9f;
-                var y = 6.8f + (k / 3) * 0.9f;
+                var x = (k % 3 - 1f) * 0.45f;
+                var y = 8f + (k / 3 - 0.5f) * 0.45f;
                 coords[(int)wave[others[k]]] = new Vector2(x, y);
             }
         }
@@ -208,7 +215,7 @@ public sealed class UmadP4FullAi : IScenarioAi<UmadP4FullState>
             else if (role == wave[4] && g0 is not null)
                 m.Face(isTrue ? m.Position - (g0.Position - m.Position) : g0.Position);
             else
-                m.Face(Vector3.Zero);
+                m.Face(m.Position - Vector3.UnitZ * 5f);
         }
     }
 

@@ -5,7 +5,7 @@
     "Punchline": "绝妖星练习实验室：P1–P5 完整串联、国服野队打法。",
     "Description": "AnoMech 的分支版本（AGPL-3.0，原作者 Anomek）。针对绝妖星做了 P1–P5 场景串联，补充 AnoMech 所有未收录的机制，使 AI 队友采取国服野队走位，可在串联器配置倒计时，自动存档/读档。 Spawns fake party members and bosses client-side so you can practice raid mechanics without a full party.",
     "InternalName": "UmadLab",
-    "AssemblyVersion": "0.1.0.1",
+    "AssemblyVersion": "0.2.0.0",
     "RepoUrl": "https://github.com/Lieng-ui/UmadLab",
     "ApplicableVersion": "any",
     "Tags": [
@@ -20,9 +20,9 @@
     "IsTestingExclusive": false,
     "DownloadCount": 0,
     "MinimumDalamudVersion": "15.0.3.4",
-    "DownloadLinkInstall": "https://cdn.jsdelivr.net/gh/Lieng-ui/UmadLab@v0.1.0.1/UmadLab/latest.zip",
-    "DownloadLinkUpdate": "https://cdn.jsdelivr.net/gh/Lieng-ui/UmadLab@v0.1.0.1/UmadLab/latest.zip",
-    "DownloadLinkTesting": "https://cdn.jsdelivr.net/gh/Lieng-ui/UmadLab@v0.1.0.1/UmadLab/latest.zip",
-    "LastUpdate": 1795703213
+    "DownloadLinkInstall": "https://cdn.jsdelivr.net/gh/Lieng-ui/UmadLab@v0.2.0.0/UmadLab/latest.zip",
+    "DownloadLinkUpdate": "https://cdn.jsdelivr.net/gh/Lieng-ui/UmadLab@v0.2.0.0/UmadLab/latest.zip",
+    "DownloadLinkTesting": "https://cdn.jsdelivr.net/gh/Lieng-ui/UmadLab@v0.2.0.0/UmadLab/latest.zip",
+    "LastUpdate": 1795876906
   }
 ]

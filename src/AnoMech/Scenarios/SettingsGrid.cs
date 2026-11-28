@@ -19,7 +19,7 @@ internal static class SettingsGrid
 
     public static void ItemWidth(float width) => ImGui.SetNextItemWidth(width * WidthScale * ImGuiHelpers.GlobalScale);
 
-    private static readonly string[] RoleLabels = ["MT", "OT", "H1", "H2", "M1", "M2", "R1", "R2"];
+    private static readonly string[] RoleLabels = ["MT", "ST", "H1", "H2", "D1", "D2", "D3", "D4"];
 
     public static string RoleLabel(PartyRole role) => RoleLabels[(int)role];
 

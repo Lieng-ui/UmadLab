@@ -130,6 +130,7 @@ public sealed class Game : IDisposable
         }
         instance = InstanceSession.Enter(World, zone, mode, out var refusal);
         if (refusal is not null) Plugin.Log.Warning($"InstanceSession: not entering {zone.Name} -- {refusal}.");
+        else ActLogBridge.EmitZoneEnter(zone.TerritoryId, zone.Name);
         return refusal;
     }
 
@@ -148,6 +149,8 @@ public sealed class Game : IDisposable
         run.Finished += OnRunFinished;
         run.MechanicFailed += OnMechanicFailed;
         run.Start();
+        World.Party.EmitActPartySync();
+        if (!p.KeepPlayerState) ActLogBridge.EmitCombatStart();
         RunStarted?.Invoke(p, instance.Mode == SessionMode.Local);
         return null;
     }
@@ -161,14 +164,17 @@ public sealed class Game : IDisposable
             ending.Finished -= OnRunFinished;
             ending.MechanicFailed -= OnMechanicFailed;
             ending.End(keepPlayerState);
+            if (!keepPlayerState) ActLogBridge.EmitRunEnd(victory: false);
         }
     }
 
     private void ExitInstance()
     {
         if (instance is null) return;
+        var prevZone = instance.Zone;
         instance.Exit();
         instance = null;
+        ActLogBridge.EmitZoneExit(prevZone.TerritoryId, prevZone.Name);
         InstanceExited?.Invoke();
     }
     
@@ -200,7 +206,7 @@ public sealed class Game : IDisposable
 
         DiagnosticLog.Warn(
             $"[Game] Kill: {target.Role} died at ({(target as IPositioned)?.Position.X:F1},{(target as IPositioned)?.Position.Z:F1}) -- {cause}");
-        Plugin.ChatGui.Print(new XivChatEntry { Type = XivChatType.SystemMessage, Message = $"[AnoMech] {DescribeName(target)} died: {cause}" });
+        Plugin.ChatGui.Print(new XivChatEntry { Type = XivChatType.SystemMessage, Message = $"[UmadLab] {DescribeName(target)} died: {cause}" });
         run?.OnDeathReported(DescribeName(target), cause);
 
         if (GodMode)
@@ -226,7 +232,11 @@ public sealed class Game : IDisposable
         World.Dispose();
     }
     
-    private void OnRunFinished(bool clean) => RunFinished?.Invoke(clean);
+    private void OnRunFinished(bool clean)
+    {
+        ActLogBridge.EmitRunEnd(victory: clean);
+        RunFinished?.Invoke(clean);
+    }
     private void OnMechanicFailed(string reason) => MechanicFailed?.Invoke(reason);
     
 

@@ -27,6 +27,10 @@ public interface IScenario : IWorldEventListener
     // How far into the phase's track the real fight is when this scenario starts.
     float BgmSecondsAtStart => 0f;
 
+    // Delay (in seconds from scenario Start) before starting the phase BGM.
+    // While waiting, the silent track is held so pre-pull countdown stays quiet.
+    float BgmStartDelaySeconds => 0f;
+
     void Run(SimWorld world, int? selectedAi);
     void Tick(float delta, float elapsed) { }
 

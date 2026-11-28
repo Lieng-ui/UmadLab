@@ -93,22 +93,23 @@ public sealed class UmadP5CelestriadState
             : rng.Shuffle(CelestriadElement.Fire, CelestriadElement.Lightning, CelestriadElement.Ice);
         AllTowers = BuildAllTowers();
 
-        var setActive = new List<IReadOnlyList<int>>(3);
-        var aero = new List<CatastrophicChoice?>(3);
-        for (var set = 0; set < 3; set++)
+        var perElementSubs = new int[Elements.Length][][];
+        for (var e = 0; e < Elements.Length; e++)
+        {
+            var doubleSet = DoubleElement.ToList().IndexOf(Elements[e]);
+            perElementSubs[e] = BuildElementSubTowers(doubleSet, overrides.FixedLitTowers);
+        }
+
+        var setActive = new List<IReadOnlyList<int>>(SetCount);
+        var aero = new List<CatastrophicChoice?>(SetCount);
+        for (var set = 0; set < SetCount; set++)
         {
             var active = new List<int>(4);
-            foreach (var element in Elements)
+            for (var e = 0; e < Elements.Length; e++)
             {
-                var isDouble = element == DoubleElement[set];
-                // Which sub-towers light up is random; sorted ascending so a doubled element's
-                // pair always lists in a stable, deterministic clockwise order for whoever reads
-                // "first" vs "second" out of it (the AI, when deciding who goes where).
-                int[] subs = overrides.FixedLitTowers
-                    ? isDouble ? [0, 2] : [1]
-                    : rng.Shuffle(0, 1, 2).Take(isDouble ? 2 : 1).OrderBy(s => s).ToArray();
-                var elementStart = Array.IndexOf(Elements, element) * 3;
-                active.AddRange(subs.Select(s => elementStart + s));
+                var elementStart = e * SubTowersPerElement;
+                foreach (var sub in perElementSubs[e][set])
+                    active.Add(elementStart + sub);
             }
             setActive.Add(active);
             aero.Add(ResolveAero(set, overrides));
@@ -116,6 +117,32 @@ public sealed class UmadP5CelestriadState
         SetActiveTowers = setActive;
         AeroVariant = aero;
     }
+
+    // Each element has 3 sub-towers and activates 1+1+2 = 4 times across the 3 sets, so one tower
+    // must repeat between set 0 and set 2, while consecutive sets (0->1 and 1->2) never light the
+    // same tower back-to-back. Each doubled pair is sorted ascending for deterministic clockwise order.
+    private int[][] BuildElementSubTowers(int doubleSet, bool fixedLitTowers)
+    {
+        if (fixedLitTowers)
+        {
+            return doubleSet switch
+            {
+                0 => new int[][] { new[] { 0, 2 }, new[] { 1 }, new[] { 0 } },
+                1 => new int[][] { new[] { 1 }, new[] { 0, 2 }, new[] { 1 } },
+                _ => new int[][] { new[] { 0 }, new[] { 1 }, new[] { 0, 2 } },
+            };
+        }
+
+        var p = rng.Shuffle(0, 1, 2);
+        return doubleSet switch
+        {
+            0 => new int[][] { SortedPair(p[0], p[1]), new[] { p[2] }, new[] { p[0] } },
+            1 => new int[][] { new[] { p[0] }, SortedPair(p[1], p[2]), new[] { p[0] } },
+            _ => new int[][] { new[] { p[0] }, new[] { p[1] }, SortedPair(p[0], p[2]) },
+        };
+    }
+
+    private static int[] SortedPair(int a, int b) => a < b ? new[] { a, b } : new[] { b, a };
 
     // Elements and the choice arrive as indices into Elements / (Aero, Earth); -1 means free/none.
     public static UmadP5CelestriadState? FromNetworkReplay(

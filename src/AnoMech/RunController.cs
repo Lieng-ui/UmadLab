@@ -65,6 +65,7 @@ internal sealed class RunController
     public void Reset()
     {
         startWait.Cancel();
+        Plugin.UmadChain?.CancelFromExternal(exitedInstance: false);
         if (!multiplayer.RequestReset())
             game.Reset();
     }
@@ -72,6 +73,7 @@ internal sealed class RunController
     public void Leave()
     {
         startWait.Cancel();
+        Plugin.UmadChain?.CancelFromExternal(exitedInstance: true);
         if (!game.World.Map.IsInInstance) return;
         if (!multiplayer.RequestLeaveInstance())
             game.Leave();

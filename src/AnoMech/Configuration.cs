@@ -14,7 +14,9 @@ public class Configuration : IPluginConfiguration
     public bool OpenSimMenuOnInn { get; set; } = true;
     public bool OpenSimMenuOnSupportedInstanceSolo { get; set; } = false;
     public bool EnableEventLogging { get; set; } = false;
-    public bool SuppressBgm { get; set; } = true;
+    public bool EnableActBridge { get; set; } = true;
+    public string ActBridgeEndpointUrl { get; set; } = "http://localhost:51423/";
+    public bool SuppressBgm { get; set; } = false;
     public bool EnableMechanicResultMarks { get; set; } = false;
     public bool EnableFukaGcdFix { get; set; } = true;
     public bool AutoCollapseWhileRunning { get; set; } = false;

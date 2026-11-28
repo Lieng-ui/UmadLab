@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TriggernometryExport PluginVersion="2.4.1.1">
+  <ExportedFolder Id="7f4b2c10-9a3e-4d88-b511-202611280001" Enabled="true" Name="UmadLab 桥接 (Endpoint)">
+    <Folders />
+    <Triggers>
+      <Trigger Enabled="true" Id="7f4b2c10-9a3e-4d88-b511-202611280002" Name="UmadLab Endpoint 日志转发" RegularExpression="^UMADLAB_LINE:(?&lt;line&gt;.+)$" Source="Endpoint" Sequential="True" Description="将 UmadLab 通过 Endpoint 发来的模拟日志按顺序送入 Triggernometry 内部日志队列（纯原生动作，不干扰 Cactbot）。">
+        <Actions>
+          <ActionLogMessage Message="${line}" ProcessAsLogline="True" />
+        </Actions>
+      </Trigger>
+      <Trigger Enabled="true" Id="7f4b2c10-9a3e-4d88-b511-202611280003" Name="UmadLab Endpoint 小队同步" RegularExpression="^@@UMADLAB_PARTY\|(?&lt;myIdx&gt;[1-8])\|(?&lt;id1&gt;[^,]+),(?&lt;id2&gt;[^,]+),(?&lt;id3&gt;[^,]+),(?&lt;id4&gt;[^,]+),(?&lt;id5&gt;[^,]+),(?&lt;id6&gt;[^,]+),(?&lt;id7&gt;[^,]+),(?&lt;id8&gt;[^,]+)$" Source="Endpoint" Sequential="True" Description="同步 UmadLab 玩家职能（myIdx）和 8 名队员的真实 EntityId 到 Triggernometry party 列表。">
+        <Actions>
+          <ActionVariableList Operation="SetAll" Name="party" Value="${id1}" Index="8" />
+          <ActionVariableList Operation="Set" Name="party" Value="${id1}" Index="1" />
+          <ActionVariableList Operation="Set" Name="party" Value="${id2}" Index="2" />
+          <ActionVariableList Operation="Set" Name="party" Value="${id3}" Index="3" />
+          <ActionVariableList Operation="Set" Name="party" Value="${id4}" Index="4" />
+          <ActionVariableList Operation="Set" Name="party" Value="${id5}" Index="5" />
+          <ActionVariableList Operation="Set" Name="party" Value="${id6}" Index="6" />
+          <ActionVariableList Operation="Set" Name="party" Value="${id7}" Index="7" />
+          <ActionVariableList Operation="Set" Name="party" Value="${id8}" Index="8" />
+          <ActionLogMessage Message="PartyList:MyIdx8:${myIdx}" ProcessAsLogline="True" />
+        </Actions>
+      </Trigger>
+    </Triggers>
+  </ExportedFolder>
+</TriggernometryExport>

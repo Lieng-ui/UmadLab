@@ -20,7 +20,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_ZIP = r"D:\download\UmadLab-0.1.0.0-local-20261126.zip"
 
 PLUGIN = {
-    "Author": "lieng",
+    "Author": "Lieng-ui",
     "Name": "UmadLab",
     "Punchline": "绝妖星练习实验室：P1–P5 完整串联、国服野队打法。",
     "Description": (
@@ -29,8 +29,8 @@ PLUGIN = {
         " Spawns fake party members and bosses client-side so you can practice raid mechanics without a full party."
     ),
     "InternalName": "UmadLab",
-    "AssemblyVersion": "0.1.0.0",
-    "RepoUrl": "https://github.com/<user>/UmadLab",
+    "AssemblyVersion": "0.2.0.0",
+    "RepoUrl": "https://github.com/Lieng-ui/UmadLab",
     "ApplicableVersion": "any",
     "Tags": ["umad", "ultimate", "practice", "simulator", "kefka"],
     "DalamudApiLevel": 15,

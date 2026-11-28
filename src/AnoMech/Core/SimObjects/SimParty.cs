@@ -110,6 +110,12 @@ public sealed class SimParty : ISimObject
         }
         foreach (var member in slots)
             if (member is not null) member.SimEvents = world.SimEvents;
+        EmitActPartySync();
+    }
+
+    internal void EmitActPartySync()
+    {
+        ActLogBridge.EmitPartySync(PlayerRole, slots);
     }
 
     private SimWorld? world;
@@ -245,7 +251,11 @@ public sealed class SimParty : ISimObject
         foreach (var member in AllMembers()) member.ActorControl.SetInCombat(inCombat);
     }
 
-    public void Mark(Sign sign, SimCharacter target) => Player?.ActorControl.Mark(sign, target.GameObjectId);
+    public void Mark(Sign sign, SimCharacter target)
+    {
+        Player?.ActorControl.Mark(sign, target.GameObjectId);
+        ActLogBridge.EmitSignMarker(sign, Player?.EntityId ?? 0x10000001u, target.EntityId);
+    }
 
     public void ClearMark(Sign sign) => Player?.ActorControl.ClearMark(sign);
 

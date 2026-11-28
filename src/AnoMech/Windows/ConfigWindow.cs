@@ -5,6 +5,7 @@ using AnoMech.Multiplayer;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Windowing;
+using AnoMech.Core.Game;
 using AnoMech.Core.Native.Interfaces;
 
 namespace AnoMech.Windows;
@@ -16,7 +17,7 @@ public class ConfigWindow : Window, IDisposable
     private string relayPassword;
     private bool askedForLocations;
 
-    public ConfigWindow(Plugin plugin) : base("AnoMech Settings###AnoMechConfig")
+    public ConfigWindow(Plugin plugin) : base("UmadLab 设置###AnoMechConfig")
     {
         Flags = ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar |
                 ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.AlwaysAutoResize;
@@ -36,28 +37,28 @@ public class ConfigWindow : Window, IDisposable
     public override void Draw()
     {
         var onInn = configuration.OpenSimMenuOnInn;
-        if (ImGui.Checkbox("Open Sim Menu when entering Inn", ref onInn))
+        if (ImGui.Checkbox("进入旅馆自动打开主界面", ref onInn))
         {
             configuration.OpenSimMenuOnInn = onInn;
             configuration.Save();
         }
 
         var suppressBgm = configuration.SuppressBgm;
-        if (ImGui.Checkbox("Suppress scenario BGM", ref suppressBgm))
+        if (ImGui.Checkbox("静音场景 BGM", ref suppressBgm))
         {
             configuration.SuppressBgm = suppressBgm;
             configuration.Save();
         }
 
         var resultMarks = configuration.EnableMechanicResultMarks;
-        if (ImGui.Checkbox("Show mechanic success/failure marks", ref resultMarks))
+        if (ImGui.Checkbox("显示机制成功/失败标记", ref resultMarks))
         {
             configuration.EnableMechanicResultMarks = resultMarks;
             configuration.Save();
         }
 
         var userActions = configuration.EnableUserActions;
-        if (ImGui.Checkbox("Resolve your own actions", ref userActions))
+        if (ImGui.Checkbox("启用自身技能结算", ref userActions))
         {
             configuration.EnableUserActions = userActions;
             configuration.Save();
@@ -69,14 +70,14 @@ public class ConfigWindow : Window, IDisposable
         {
             var threshold = configuration.CastInterruptThreshold;
             ImGui.SetNextItemWidth(90 * ImGuiHelpers.GlobalScale);
-            if (ImGui.InputFloat("Slidecast window (s)", ref threshold, 0.05f, 0.1f, "%.2f"))
+            if (ImGui.InputFloat("滑步判定窗口 (秒)", ref threshold, 0.05f, 0.1f, "%.2f"))
             {
                 configuration.CastInterruptThreshold = Math.Clamp(threshold, 0f, 5f);
                 configuration.Save();
             }
 
             var tankMitigation = configuration.EnableTankMitigation;
-            if (ImGui.Checkbox("Require tank mitigation", ref tankMitigation))
+            if (ImGui.Checkbox("启用坦克减伤判定", ref tankMitigation))
             {
                 configuration.EnableTankMitigation = tankMitigation;
                 configuration.Save();
@@ -88,7 +89,7 @@ public class ConfigWindow : Window, IDisposable
         ImGui.Separator();
 
         var logging = configuration.EnableEventLogging;
-        if (ImGui.Checkbox("Enable event logging", ref logging))
+        if (ImGui.Checkbox("启用事件日志", ref logging))
         {
             configuration.EnableEventLogging = logging;
             configuration.Save();
@@ -96,8 +97,36 @@ public class ConfigWindow : Window, IDisposable
             else Plugin.LogManager.Close();
         }
         ImGui.SameLine();
-        if (ImGui.Button("Open logs folder"))
+        if (ImGui.Button("打开日志目录"))
             Plugin.LogManager.OpenLogsFolder();
+
+        var actBridge = configuration.EnableActBridge;
+        if (ImGui.Checkbox("ACT / 宝宝椅桥接 (Endpoint)", ref actBridge))
+        {
+            configuration.EnableActBridge = actBridge;
+            configuration.Save();
+            if (actBridge) ActLogBridge.Start();
+            else ActLogBridge.Stop();
+        }
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("通过 Triggernometry 自带 Endpoint 转发模拟日志（免装额外 ACT 插件，不干扰 Cactbot）。");
+        if (configuration.EnableActBridge)
+        {
+            ImGui.SameLine();
+            var status = ActLogBridge.IsConnected ? "已连通" : "等待 Endpoint";
+            ImGui.TextDisabled($"({status}, {ActLogBridge.SentCount} 行)");
+
+            var url = configuration.ActBridgeEndpointUrl ?? ActLogBridge.DefaultEndpointUrl;
+            ImGui.SetNextItemWidth(220 * ImGuiHelpers.GlobalScale);
+            if (ImGui.InputText("Endpoint 地址##act_ep", ref url, 128))
+            {
+                configuration.ActBridgeEndpointUrl = url;
+                configuration.Save();
+            }
+            ImGui.SameLine();
+            if (ImGui.Button("测试进本##act_ep_test"))
+                ActLogBridge.EmitZoneEnter(1363, "妖星乱舞绝境战");
+        }
 
         ImGui.Separator();
         DrawMultiplayerServer();

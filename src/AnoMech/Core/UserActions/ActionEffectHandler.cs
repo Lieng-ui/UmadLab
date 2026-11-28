@@ -30,7 +30,7 @@ internal sealed unsafe class ActionEffectHandler : IUserActionHandler
             // Every action lands so its hit plays on the target; a combo step also carries its marker.
             Targets: [role == ComboRole.None
                 ? new ActionEffectTarget(target)
-                : new ActionEffectTarget(target, [ActionEffectEntry.ActionMarker(actionId, role == ComboRole.Continuation)])],
+                : new ActionEffectTarget(target, [ActionEffectEntry.ActionMarker(PlayerCombo.ComboId(actionId), role == ComboRole.Continuation)])],
             SourceSequence: am->LastUsedActionSequence));
     }
 

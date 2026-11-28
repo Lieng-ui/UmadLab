@@ -52,7 +52,22 @@ public sealed class UmadP2FullState
     }
 
     public (int PartyIndex, int TankIndex) PickTrineSafePair()
-        => (TrineWave1Indices[0], TrineWave1Indices[^1]);
+    {
+        var dirs = TrineWave1Indices.Select(i => (6 - i) % 6).OrderBy(d => d).ToArray();
+        var d0 = dirs[0];
+        var d1 = dirs[1];
+        var d2 = dirs[2];
+        var adj12 = (d0 - d1 + 6) % 6 is 1 or 5;
+        var adj13 = (d2 - d0 + 6) % 6 is 1 or 5;
+        int partyDir6;
+        if (!adj12)
+            partyDir6 = d1;
+        else if (!adj13)
+            partyDir6 = d2;
+        else
+            partyDir6 = !TrineCenterIsRight ? 5 : 1;
+        return ((6 - partyDir6) % 6, (6 - d0) % 6);
+    }
 
     public static IReadOnlyList<Vector2> GetWaveVertices(IReadOnlyList<int> outerIndices, bool includeCenter, bool centerIsRight)
     {

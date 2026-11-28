@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using AnoMech.Core.Game;
 using AnoMech.Core.Native.Interfaces;
 
 namespace AnoMech.Core.Map;
@@ -181,6 +182,7 @@ public sealed class MapController
     public void AddEffect(uint packetFlags, byte index)
     {
         if (!InSim(nameof(AddEffect))) return;
+        ActLogBridge.EmitMapEffect(packetFlags, index);
         // Behind a pending call for the same slot, or it would land first and be overwritten.
         var behind = pendingSnapshot != null || pendingEffects.Exists(p => p.Index == index);
         if ((behind || !Natives.MapEffects.Apply(packetFlags, index)) && TryReserveRetrySlot(pendingEffects.Count, "MapEffect"))
@@ -217,6 +219,7 @@ public sealed class MapController
     public void DirectorUpdate(uint category, uint arg1 = 0, uint arg2 = 0, uint arg3 = 0, uint arg4 = 0, uint arg5 = 0, uint arg6 = 0)
     {
         if (!InSim(nameof(DirectorUpdate))) return;
+        ActLogBridge.EmitDirectorUpdate(category, arg1, arg2, arg3, arg4);
         if (!Natives.Director.ProcessDirectorUpdate(category, arg1, arg2, arg3, arg4, arg5, arg6)
             && TryReserveRetrySlot(pendingDirectorUpdates.Count, "DirectorUpdate"))
         {

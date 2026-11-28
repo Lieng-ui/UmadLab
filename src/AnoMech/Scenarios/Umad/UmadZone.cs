@@ -33,7 +33,7 @@ public sealed class UmadZone : IZone
             [0x1B] = 1, [0x1C] = 1, [0x1D] = 1, [0x1E] = 1, [0x1F] = 1, [0x20] = 1, [0x21] = 1,
         });
 
-    public string Name => "Dancing Mad";
+    public string Name => "绝妖星乱舞";
     public uint TerritoryId => 1363;
     public Vector3 Origin => new(100f, 0f, 100f);
 
@@ -49,29 +49,8 @@ public sealed class UmadZone : IZone
 
     private static readonly IReadOnlyList<WaymarkLayout> Waymarks =
     [
-        new WaymarkLayout("Diamond Waymarks", [
-            new(WaymarkSlot.A,     new Vector3(  0, 0, -12)),
-            new(WaymarkSlot.B,     new Vector3( 12, 0,   0)),
-            new(WaymarkSlot.C,     new Vector3(  0, 0,  12)),
-            new(WaymarkSlot.D,     new Vector3(-12, 0,   0)),
-            new(WaymarkSlot.One,   new Vector3( -6, 0,  -6)),
-            new(WaymarkSlot.Two,   new Vector3(  6, 0,  -6)),
-            new(WaymarkSlot.Three, new Vector3(  6, 0,   6)),
-            new(WaymarkSlot.Four,  new Vector3( -6, 0,   6)),
-        ]),
-        new WaymarkLayout("DN Zenith Waymarks",
-        [
-            new(WaymarkSlot.A,     new Vector3(    0, 0,   -12)),
-            new(WaymarkSlot.B,     new Vector3(   12, 0,     0)),
-            new(WaymarkSlot.C,     new Vector3(    0, 0,    12)),
-            new(WaymarkSlot.D,     new Vector3(  -12, 0,     0)),
-            new(WaymarkSlot.One,   new Vector3(-8.765f, 0, -8.765f)),
-            new(WaymarkSlot.Two,   new Vector3( 8.628f, 0, -8.765f)),
-            new(WaymarkSlot.Three, new Vector3( 8.628f, 0,  8.628f)),
-            new(WaymarkSlot.Four,  new Vector3(-8.765f, 0,  8.628f)),
-        ]),
         // A/B/C/D on cardinals 12y out, 1-4 on the corners (±12, ±12).
-        new WaymarkLayout("[LPDU] Big Box",
+        new WaymarkLayout("[LPDU] Big Box (国服默认)",
         [
             new(WaymarkSlot.A,     new Vector3(  0, 0, -12)),
             new(WaymarkSlot.B,     new Vector3( 12, 0,   0)),

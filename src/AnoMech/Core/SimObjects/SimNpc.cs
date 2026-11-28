@@ -27,6 +27,7 @@ public class SimNpc : SimCharacter
     private const int PacketSpawnTimeoutFrames = 20;
     protected int PacketSpawnFrames { get; private set; }
     private uint packetEntityId;
+    internal uint ActEntityId => EntityId != 0 ? EntityId : packetEntityId;
     private Placement packetSpawnPlacement;
 
     // Pending counts as alive, or SimWorld's reaper would drop the wrapper before its actor
@@ -102,6 +103,8 @@ public class SimNpc : SimCharacter
     public override void Despawn()
     {
         if (proxy == null) return;
+        if (this is SimEnemy enemy)
+            ActLogBridge.EmitRemoveCombatant(proxy.EntityId, enemy.DisplayName, enemy.BNpcBaseId, Coordinates.ToGlobal(Position), Rotation);
         PacketSpawnPending = false;
         Casting.Despawn();
         base.Despawn();

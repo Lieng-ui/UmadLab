@@ -63,7 +63,7 @@ public sealed class UmadP3FullAi : IScenarioAi<UmadP3FullState>
         world.Events.Add(cd + T0 + LcBase + 50.9f, MainTankOntoExdeath);
         ai.Move(cd + T0 + LcBase + 56.15f, SwapPostLcThunderTanks, arrivalTime: cd + T0 + LcBase + 58.4f);
         SchedulePostLcThunderClearance(cd + T0 + LcBase + 53.8f, cd + T0 + LcBase + 56.15f, cd + T0 + LcBase + 59.5f);
-        blackHoleAi.RunAt(state.BlackHole, world, cd + T0 + UmadP3FullScenario.BlackHoleBaseSec);
+        blackHoleAi.RunAt(state.BlackHole, world, cd + T0 + UmadP3FullScenario.BlackHoleBaseSec, state.BuildBlackHolePrioritySeats());
     }
 
     private static Vector2 Flat(Vector3 v) => new(v.X, v.Z);

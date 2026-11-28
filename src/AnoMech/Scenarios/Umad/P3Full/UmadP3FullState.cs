@@ -29,6 +29,7 @@ public sealed class UmadP3FullState
     public float ChaosKillDelayAfterBigBangSec { get; }
     public float ExdeathKillDelayAfterChaosSec { get; }
     public bool EnableCheatSheet { get; }
+    public BlackHoleTetherPriority TetherPriority { get; }
 
     // Spot indices match UmadP3LimitCutState: 0=S, 1=SE, 2=E, 3=NE, 4=N, 5=NW, 6=W, 7=SW
     public int FireSpot { get; }
@@ -93,6 +94,7 @@ public sealed class UmadP3FullState
         ChaosKillDelayAfterBigBangSec = Math.Clamp(overrides.ChaosKillDelayAfterBigBangSec, 5.0f, 25.0f);
         ExdeathKillDelayAfterChaosSec = Math.Clamp(overrides.ExdeathKillDelayAfterChaosSec, 2.0f, 9.5f);
         EnableCheatSheet = overrides.EnableCheatSheet;
+        TetherPriority = overrides.TetherPriority;
         FireSpot = overrides.FireSpot is 1 or 3 or 5 or 7 ? overrides.FireSpot.Value : rng.NextObj(1, 3, 5, 7);
         WaterSpot = Mod8(FireSpot + 4);
         WindSpot = Mod8(FireSpot + (rng.NextBool() ? 2 : 6));
@@ -139,6 +141,64 @@ public sealed class UmadP3FullState
             ThunderSet2 = ThunderIIIAssignment.ShareOtFirst,
         };
         BlackHole = new UmadP3BlackHoleState(world, bhOverrides);
+    }
+
+
+    public PartyRole[] BuildBlackHolePrioritySeats()
+    {
+        var result = new PartyRole[8];
+        int Rank(PartyRole role) => TetherPriority switch
+        {
+            BlackHoleTetherPriority.DhtMtFirst => role switch
+            {
+                PartyRole.MeleeDpsA => 0,
+                PartyRole.MeleeDpsB => 1,
+                PartyRole.PhysRangedDps => 2,
+                PartyRole.CasterDps => 3,
+                PartyRole.RegenHealer => 4,
+                PartyRole.ShieldHealer => 5,
+                PartyRole.MainTank => 6,
+                _ => 7,
+            },
+            BlackHoleTetherPriority.DhtStFirst => role switch
+            {
+                PartyRole.MeleeDpsA => 0,
+                PartyRole.MeleeDpsB => 1,
+                PartyRole.PhysRangedDps => 2,
+                PartyRole.CasterDps => 3,
+                PartyRole.RegenHealer => 4,
+                PartyRole.ShieldHealer => 5,
+                PartyRole.OffTank => 6,
+                _ => 7,
+            },
+            _ => role switch
+            {
+                PartyRole.MeleeDpsA => 0,
+                PartyRole.MeleeDpsB => 1,
+                PartyRole.PhysRangedDps => 2,
+                PartyRole.CasterDps => 3,
+                PartyRole.MainTank => 4,
+                PartyRole.OffTank => 5,
+                PartyRole.RegenHealer => 6,
+                _ => 7,
+            },
+        };
+
+        var g1 = new[] { BlackHole.Roles[4], BlackHole.Roles[0], BlackHole.Roles[3] }.OrderBy(Rank).ToArray();
+        result[4] = g1[0];
+        result[0] = g1[1];
+        result[3] = g1[2];
+
+        var g2 = new[] { BlackHole.Roles[5], BlackHole.Roles[1], BlackHole.Roles[7] }.OrderBy(Rank).ToArray();
+        result[5] = g2[0];
+        result[1] = g2[1];
+        result[7] = g2[2];
+
+        var g3 = new[] { BlackHole.Roles[6], BlackHole.Roles[2] }.OrderBy(Rank).ToArray();
+        result[6] = g3[0];
+        result[2] = g3[1];
+
+        return result;
     }
 
     public bool HasFire(PartyRole role) => role == FireSupport || role == FireDps;

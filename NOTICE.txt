@@ -25,7 +25,7 @@ The complete corresponding source is published in this repository:
 
   https://github.com/Lieng-ui/UmadLab/tree/master/src
 
-This build (assembly version 0.1.0.0) was compiled from that tree; the exact
+This build (assembly version 0.2.0.0) was compiled from that tree; the exact
 commit is recorded in src/SOURCE.md.
 
 This program is distributed in the hope that it will be useful, but WITHOUT ANY

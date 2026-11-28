@@ -21,7 +21,9 @@ public sealed class UmadP3FullScenario : IScenario
 {
     public string Name => "Full";
     public IPhase Phase => UmadZone.P3;
-    public float BgmSecondsAtStart => 421.67f;
+    // 20293 starts ~30.41s before P3 knockdown ends (matches LimitCut 108.67s - 7.30s - 70.96s).
+    public float BgmSecondsAtStart => 30.41f;
+    public float BgmStartDelaySeconds => state?.CountdownSeconds ?? 0f;
     public bool SupportsSolo => true;
     public bool SupportsMultiplayer => false;
     public IReadOnlyList<IScenarioAi> AiStrats => [new UmadP3FullAi()];
@@ -850,6 +852,8 @@ public sealed class UmadP3FullScenario : IScenario
         SimEnemy? hole = null;
         SimTether? tether = null;
         AtBh(spawnTime, () => hole = SpawnBlackHole(pos));
+        if (tetherTime - spawnTime <= 1.0f)
+            AtBh(spawnTime + 0.05f, () => { if (hole != null) ActLogBridge.EmitBlackHoleSpawnExtra(hole.ActEntityId, world.Coordinates.ToGlobal(pos), TetherId.GrabbyTether); });
         AtBh(tetherTime, () => tether = world.Tether(hole!, End.Passable(), TetherId.GrabbyTether));
 
         const float fadeOutDelay = 1.05f;
@@ -1128,7 +1132,7 @@ public sealed class UmadP3FullScenario : IScenario
     private void ScheduleBlackHolePlayerCallouts()
     {
         if (!state.EnableCheatSheet) return;
-        var seat = Array.IndexOf(state.BlackHole.Roles.List, party.PlayerRole);
+        var seat = Array.IndexOf(state.BuildBlackHolePrioritySeats(), party.PlayerRole);
         if (seat < 0) return;
 
         switch (seat)

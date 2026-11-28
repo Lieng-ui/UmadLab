@@ -22,6 +22,7 @@ public sealed class UmadP1FullScenario : IScenario
     public string Name => "Full";
     public IPhase Phase => UmadZone.P1;
     public float BgmSecondsAtStart => 0f;
+    public float BgmStartDelaySeconds => state?.CountdownSeconds ?? 0f;
     public bool SupportsSolo => true;
     public bool SupportsMultiplayer => false;
     public IReadOnlyList<IScenarioAi> AiStrats => [new UmadP1FullAi()];
@@ -472,7 +473,15 @@ public sealed class UmadP1FullScenario : IScenario
         At(39.37f, Gi1ResolveFire1);
 
         At(42.75f, () => kefka?.Cast(Constants.ActionId.DoubleTroubleTrapCast, animationLock: 2.1f));
-        At(43.55f, () => statuePropA2?.PlayBeat(EObjAnimTetherFire.State, EObjAnimTetherFire.Bitmask));
+        At(43.55f, () =>
+        {
+            statuePropA2?.PlayBeat(EObjAnimTetherFire.State, EObjAnimTetherFire.Bitmask);
+            ActLogBridge.EmitEObjAnimation(
+                statuePropA2?.SpawnConfig.EntityId ?? (Constants.Spawn.EarlierStatueEntityIdBase + 1u),
+                Constants.EObjId.EarlierStatueA,
+                world.Coordinates.ToGlobal(LowerStatuePos),
+                0f, 0x0040, 0x0080);
+        });
         At(43.60f, Gi1ResolveWaveCannonLasers);
         At(44.22f, Gi1SpawnExplosionTowers);
         At(45.73f, () =>
